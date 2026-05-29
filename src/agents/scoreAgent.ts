@@ -10,9 +10,9 @@ export type ScoreResult = {
 };
 
 const riskPatterns: Array<{ flag: string; pattern: RegExp }> = [
-  { flag: "politics", pattern: /\b(election|senate|congress|president|democrat|republican|trump|biden|vote|campaign)\b/i },
+  { flag: "politics", pattern: /\b(election|senate|congress|president|democrat|republican|trump\w*|biden\w*|vote|campaign)\b/i },
   { flag: "religion", pattern: /\b(religion|church|pastor|prayer|christian|muslim|islam|jewish|hindu|god)\b/i },
-  { flag: "medical", pattern: /\b(medical|doctor|diagnosis|cancer|vaccine|medicine|therapy|depression|anxiety|surgery)\b/i },
+  { flag: "medical", pattern: /\b(medical|doctor|diagnosis|cancers?|vaccine|medicine|therapy|depression|anxiety|surgery)\b/i },
   { flag: "legal", pattern: /\b(legal|lawsuit|attorney|lawyer|court|contract|sue|settlement)\b/i },
   { flag: "tragedy", pattern: /\b(death|killed|shooting|war|disaster|victim|attack|tragedy|mourning)\b/i },
   { flag: "adult", pattern: /\b(nsfw|porn|sex|sexual|onlyfans)\b/i },

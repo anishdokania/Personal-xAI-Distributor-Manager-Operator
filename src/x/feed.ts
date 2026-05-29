@@ -17,9 +17,12 @@ export type ScannedFeedItem = FeedItemInput & {
 
 function normalizeXUrl(url: string | null): string | null {
   if (!url) return null;
-  if (url.startsWith("http")) return url;
-  if (url.startsWith("/")) return `https://x.com${url}`;
-  return `https://x.com/${url}`;
+  const absoluteUrl = url.startsWith("http") ? url : url.startsWith("/") ? `https://x.com${url}` : `https://x.com/${url}`;
+  const parsed = new URL(absoluteUrl);
+  const match = parsed.pathname.match(/^\/([^/]+)\/status\/(\d+)/);
+
+  if (!match) return absoluteUrl;
+  return `https://x.com/${match[1]}/status/${match[2]}`;
 }
 
 function isUsefulTweet(item: BrowserExtractedTweet): boolean {

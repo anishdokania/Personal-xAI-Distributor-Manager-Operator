@@ -79,16 +79,41 @@ function mockPost(): string {
 function mockReply(userContent: string): string {
   const postMatch = userContent.match(/Original post:\s*([\s\S]*?)(?:\n\nAuthor:|$)/i);
   const originalPost = postMatch?.[1]?.trim() || "";
+  const lower = originalPost.toLowerCase();
 
-  if (originalPost.toLowerCase().includes("local")) {
+  if (lower.includes("local") || lower.includes("github") || lower.includes("gitlab")) {
     return "The local-first part matters. It makes the system easier to inspect, pause, and trust before it gets any real autonomy.";
+  }
+
+  if (lower.includes("claude") || lower.includes("codex")) {
+    return "I think the honest answer is workflow-specific. The better tool is usually the one that keeps more context without hiding what changed.";
+  }
+
+  if (lower.includes("building") || lower.includes("build")) {
+    return "Small practical tools are underrated. The useful ones usually start as one annoying workflow made a little less manual.";
+  }
+
+  if (lower.includes("subscription") || lower.includes("price") || lower.includes("cost")) {
+    return "This is why I keep getting pulled toward local-first tools. Predictable cost and inspectable state matter more over time.";
+  }
+
+  if (lower.includes("engineering") || lower.includes("developer") || lower.includes("code")) {
+    return "It feels more fun when the tool handles setup and repetition, but less fun when it hides the reasoning you need to learn from.";
+  }
+
+  if (lower.includes("ai")) {
+    return "The useful version is usually narrower than the hype: one clear task, visible tradeoffs, and a human still able to steer.";
   }
 
   return "This is the right shape: keep the automation small, observable, and easy to interrupt before making it more capable.";
 }
 
 function mockScore(userContent: string) {
-  const lower = userContent.toLowerCase();
+  const scoredPost =
+    userContent.match(/Text:\s*([\s\S]*?)\nMetrics:/i)?.[1]?.trim() ||
+    userContent.match(/Post:\s*([\s\S]*?)(?:\n\nReturn JSON|$)/i)?.[1]?.trim() ||
+    userContent;
+  const lower = scoredPost.toLowerCase();
   const risky = [
     "politics",
     "religion",
@@ -108,9 +133,21 @@ function mockScore(userContent: string) {
     };
   }
 
-  const relevantTerms = ["ai", "agent", "automation", "local", "workflow", "operator", "tool"];
+  const relevantTerms = [
+    "ai",
+    "agent",
+    "automation",
+    "claude",
+    "codex",
+    "gpt",
+    "local",
+    "operator",
+    "product",
+    "tool",
+    "workflow"
+  ];
   const matches = relevantTerms.filter((term) => lower.includes(term));
-  const score = Math.min(9, Math.max(5, 5 + matches.length));
+  const score = matches.length > 0 ? Math.min(9, 7 + matches.length) : 5;
 
   return {
     score,
