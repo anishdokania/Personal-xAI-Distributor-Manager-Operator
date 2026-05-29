@@ -6,6 +6,7 @@ dist
 tsconfig.tsbuildinfo
 data/*.sqlite
 data/*.sqlite-*
+data/*.log
 data/x-session
 playwright-report
 test-results

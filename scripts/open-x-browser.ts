@@ -19,7 +19,10 @@ process.on("SIGTERM", () => {
 });
 
 await session.page.goto("https://x.com/home", { waitUntil: "domcontentloaded" });
+await session.page.bringToFront().catch(() => undefined);
 console.log("X browser is open. Log in if needed, then close the browser window when done.");
 
-await session.page.waitForEvent("close").catch(() => undefined);
+await new Promise<void>((resolve) => {
+  session.context.on("close", () => resolve());
+});
 await closeSession();

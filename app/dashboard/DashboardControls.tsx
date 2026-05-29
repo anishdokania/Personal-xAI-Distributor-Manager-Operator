@@ -31,13 +31,13 @@ export default function DashboardControls({
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState("");
 
-  async function run(label: string, task: () => Promise<unknown>) {
+  async function run(label: string, task: () => Promise<unknown>, successMessage?: string) {
     setBusy(label);
     setMessage("");
 
     try {
       await task();
-      setMessage(`${label} completed.`);
+      setMessage(successMessage || `${label} completed.`);
       router.refresh();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : String(error));
@@ -65,7 +65,13 @@ export default function DashboardControls({
         </button>
         <button
           disabled={Boolean(busy)}
-          onClick={() => run("X browser", () => postJson("/api/x/open"))}
+          onClick={() =>
+            run(
+              "X browser",
+              () => postJson("/api/x/open"),
+              "X browser launched. Look for the separate Chromium window."
+            )
+          }
         >
           Open X browser
         </button>
