@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Personal X AI Operator",
-  description: "Local-first personal X automation dashboard"
+  description: "A local-first X engagement assistant with a simple dashboard"
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

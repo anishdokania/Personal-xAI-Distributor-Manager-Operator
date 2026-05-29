@@ -48,18 +48,18 @@ export default function DashboardPage() {
           </strong>
         </div>
         <div className="metric">
-          <span>Auto-post</span>
+          <span>Post mode</span>
           <strong>
             <span className={statusClass(data.settings.autoPostEnabled)}>
-              {data.settings.autoPostEnabled ? "Enabled" : "Disabled"}
+              {data.settings.autoPostEnabled ? "Live" : "Drafts"}
             </span>
           </strong>
         </div>
         <div className="metric">
-          <span>Auto-reply</span>
+          <span>Reply mode</span>
           <strong>
             <span className={statusClass(data.settings.autoReplyEnabled)}>
-              {data.settings.autoReplyEnabled ? "Enabled" : "Disabled"}
+              {data.settings.autoReplyEnabled ? "Live" : "Drafts"}
             </span>
           </strong>
         </div>

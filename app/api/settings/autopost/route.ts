@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
   const enabled = typeof body.enabled === "boolean" ? body.enabled : !current;
 
   setSetting("auto_post_enabled", enabled);
-  recordAction("settings", "updated", enabled ? "Auto-post enabled" : "Auto-post disabled");
+  recordAction("settings", "updated", enabled ? "Live posting enabled" : "Post drafts enabled");
 
   return NextResponse.json({ ok: true, enabled });
 }

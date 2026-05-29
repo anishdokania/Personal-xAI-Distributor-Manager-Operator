@@ -56,14 +56,14 @@ export default function DashboardControls({
           disabled={Boolean(busy)}
           onClick={() => run("Post agent", () => postJson("/api/agents/post"))}
         >
-          Run post agent now
+          {autoPostEnabled ? "Run live post" : "Generate post draft"}
         </button>
         <button
           className="primary"
           disabled={Boolean(busy)}
           onClick={() => run("Reply agent", () => postJson("/api/agents/reply"))}
         >
-          Run reply agent now
+          {autoReplyEnabled ? "Run live replies" : "Scan and draft replies"}
         </button>
         <button
           disabled={Boolean(busy)}
@@ -90,22 +90,22 @@ export default function DashboardControls({
         <button
           disabled={Boolean(busy)}
           onClick={() =>
-            run(autoPostEnabled ? "Auto-post paused" : "Auto-post resumed", () =>
+            run(autoPostEnabled ? "Live posting disabled" : "Live posting enabled", () =>
               postJson("/api/settings/autopost", { enabled: !autoPostEnabled })
             )
           }
         >
-          {autoPostEnabled ? "Pause auto-post" : "Resume auto-post"}
+          {autoPostEnabled ? "Use post drafts" : "Enable live posting"}
         </button>
         <button
           disabled={Boolean(busy)}
           onClick={() =>
-            run(autoReplyEnabled ? "Auto-reply paused" : "Auto-reply resumed", () =>
+            run(autoReplyEnabled ? "Live replies disabled" : "Live replies enabled", () =>
               postJson("/api/settings/autoreply", { enabled: !autoReplyEnabled })
             )
           }
         >
-          {autoReplyEnabled ? "Pause auto-reply" : "Resume auto-reply"}
+          {autoReplyEnabled ? "Use reply drafts" : "Enable live replies"}
         </button>
       </div>
       <p className={message.toLowerCase().includes("failed") || message.toLowerCase().includes("error") ? "status-text error" : "status-text"}>
