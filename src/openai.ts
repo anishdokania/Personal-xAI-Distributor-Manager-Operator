@@ -39,6 +39,10 @@ function includesAny(text: string, terms: string[]): boolean {
   return terms.some((term) => text.includes(term));
 }
 
+function containsTerm(text: string, term: string): boolean {
+  return new RegExp(`\\b${term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i").test(text);
+}
+
 function cleanAnchor(text: string): string {
   return text
     .replace(/https?:\/\/\S+/g, "")
@@ -82,17 +86,48 @@ type LocalReplyTopic =
   | "dev_workflow"
   | "ai_general";
 
+type LocalPostIntent = "question" | "comparison" | "complaint" | "launch" | "advice" | "opinion";
+type LocalReplyStyle = "answer" | "nuance" | "counterpoint" | "principle" | "question";
+
 function detectReplyTopic(lower: string): LocalReplyTopic {
+  if (includesAny(lower, ["subscription", "price", "cost", "$", "plan", "limit"])) return "cost";
   if (includesAny(lower, ["claude", "codex", "chatgpt", "gpt", "cursor", "model"])) return "tool_choice";
   if (lower.includes("vibe coding") || lower.includes("vibecoder")) return "vibe_coding";
   if (includesAny(lower, ["local", "github", "gitlab", "bitbucket", "repo", "repository"])) return "source_control";
-  if (includesAny(lower, ["subscription", "price", "cost", "$", "plan", "limit"])) return "cost";
   if (includesAny(lower, ["building", "build", "product", "ship", "startup", "audience"])) return "building";
   if (includesAny(lower, ["engineering", "developer", "code", "coding", "deploy", "stack"])) return "dev_workflow";
   return "ai_general";
 }
 
-function localReplyFromParts(topic: LocalReplyTopic, anchor: string, seed: number): string {
+function detectPostIntent(text: string, lower: string): LocalPostIntent {
+  if (text.includes("?")) return "question";
+  if (/\b(vs|versus|or|which|better|best)\b/i.test(text)) return "comparison";
+  if (includesAny(lower, ["frustrating", "annoying", "hate", "miss", "limit", "expensive", "hard"])) return "complaint";
+  if (includesAny(lower, ["launch", "launched", "shipping", "released", "new", "introducing"])) return "launch";
+  if (includesAny(lower, ["should", "need to", "stop", "start", "lesson", "advice"])) return "advice";
+  return "opinion";
+}
+
+function detectReplyStyle(intent: LocalPostIntent, seed: number): LocalReplyStyle {
+  const stylesByIntent: Record<LocalPostIntent, LocalReplyStyle[]> = {
+    question: ["answer", "nuance", "question"],
+    comparison: ["nuance", "answer", "counterpoint"],
+    complaint: ["nuance", "principle", "question"],
+    launch: ["principle", "nuance", "question"],
+    advice: ["principle", "counterpoint", "nuance"],
+    opinion: ["nuance", "counterpoint", "principle"]
+  };
+
+  return pick(stylesByIntent[intent], seed);
+}
+
+function localReplyFromParts(
+  topic: LocalReplyTopic,
+  intent: LocalPostIntent,
+  style: LocalReplyStyle,
+  anchor: string,
+  seed: number
+): string {
   const openings: Record<LocalReplyTopic, string[]> = {
     tool_choice: [
       "I would decide this by workflow, not brand.",
@@ -170,20 +205,149 @@ function localReplyFromParts(topic: LocalReplyTopic, anchor: string, seed: numbe
   };
 
   const endings = [
-    "That is the part I would optimize for.",
-    "That feels like the practical test.",
-    "That is where the tool starts earning trust.",
-    "That is the difference between leverage and noise.",
-    "That is the bit I would want to measure."
+    "Curious how you are weighing that tradeoff.",
+    "That is the part I would watch closely.",
+    "That is where the workflow usually reveals the truth.",
+    "The interesting part is what happens after the first week.",
+    "That is the bit most teams under-measure."
   ];
-  const opening = pick(openings[topic], seed);
-  const insight = pick(insights[topic], seed * 3);
-  const ending = pick(endings, seed * 7);
+  const styleOpeners: Record<LocalReplyStyle, string[]> = {
+    answer: [
+      pick(openings[topic], seed),
+      "My short answer would be: it depends where the loop breaks.",
+      "I would answer this by looking at the repeated workflow."
+    ],
+    nuance: [
+      pick(openings[topic], seed + 1),
+      "The nuance is that speed and control are not the same thing.",
+      "I think the useful split is between output quality and workflow quality."
+    ],
+    counterpoint: [
+      "I slightly disagree with the obvious take here.",
+      "The part I would push on is the hidden assumption.",
+      "The counterpoint is that faster is not automatically better."
+    ],
+    principle: [
+      pick(openings[topic], seed + 2),
+      "A useful rule of thumb: optimize the loop, not the demo.",
+      "The principle I keep coming back to is visibility before autonomy."
+    ],
+    question: [
+      pick(openings[topic], seed + 3),
+      "The thing I would want to know is where the friction actually shows up.",
+      "The follow-up question is whether this changes the daily workflow or just the headline."
+    ]
+  };
+  const styleInsights: Record<LocalReplyStyle, string[]> = {
+    answer: [
+      pick(insights[topic], seed * 3),
+      "The better choice is usually the one that makes the next correction easier.",
+      "I would pick the option that reduces repeated manual decisions without hiding context."
+    ],
+    nuance: [
+      pick(insights[topic], seed * 5),
+      "A tool can feel powerful and still make the system harder to reason about.",
+      "The real test is whether it improves judgment, not only throughput."
+    ],
+    counterpoint: [
+      pick(insights[topic], seed * 7),
+      "The part that matters most is often what happens when the tool is wrong.",
+      "The risk is optimizing for the impressive moment instead of the repeatable process."
+    ],
+    principle: [
+      pick(insights[topic], seed * 11),
+      "If the loop is inspectable, you can safely make it faster over time.",
+      "A narrow workflow with clear state beats a broad promise with fuzzy ownership."
+    ],
+    question: [
+      pick(insights[topic], seed * 13),
+      "I would be curious whether people keep using it after the novelty wears off.",
+      "The signal I would watch is whether it changes what someone does tomorrow."
+    ]
+  };
+  const opening = pick(styleOpeners[style], seed);
+  const insight = pick(styleInsights[style], seed * 3);
+  const ending = intent === "question" && style !== "question" ? "" : pick(endings, seed * 7);
   const anchorLine = anchor.length > 0 && anchor.length <= 56 ? ` On \"${anchor}\": ` : " ";
-  const base = `${opening}${anchorLine}${insight}`;
-  const withEnding = `${base} ${ending}`;
+  const shouldUseAnchor = style !== "question" && anchor.length > 0 && anchor.length <= 56;
+  const base = `${opening}${shouldUseAnchor ? anchorLine : " "}${insight}`;
+  const withEnding = ending ? `${base} ${ending}` : base;
 
   return withEnding.length <= 230 ? withEnding : trimReply(base);
+}
+
+function specificLocalReply(originalPost: string, lower: string, seed: number): string | null {
+  if (lower.includes("one language") && includesAny(lower, ["python", "javascript", "typescript", "rust"])) {
+    return pick(
+      [
+        "I would bet on TypeScript if the goal is shipping useful products, and Python if the goal is AI/data workflows. The safer career bet is knowing when to use each.",
+        "For pure opportunity, I would pick TypeScript plus enough Python to work with AI systems. The language matters less than being able to ship end to end.",
+        "I would choose JavaScript/TS for distribution and Python for leverage. The real edge is being dangerous enough in both to turn ideas into tools."
+      ],
+      seed
+    );
+  }
+
+  if (lower.includes("dark mode") && lower.includes("white mode")) {
+    return pick(
+      [
+        "Dark mode for long sessions, light mode for reviewing dense UI and screenshots. Visibility depends less on taste and more on the kind of work in front of you.",
+        "Dark mode when I am building, light mode when I am checking contrast or reviewing details. The best setup changes with the task.",
+        "For coding I prefer dark mode, but light mode catches certain UI and contrast issues faster. I would not make it a personality trait."
+      ],
+      seed
+    );
+  }
+
+  if (lower.includes("agi") && includesAny(lower, ["finally", "here", "released"])) {
+    return pick(
+      [
+        "I do not think a model release is the AGI line. The more interesting question is whether it changes reliable workflows people trust every day.",
+        "Probably not AGI, but maybe another step toward tools that feel less like chat and more like dependable workflows.",
+        "I would judge it less by the launch label and more by whether it makes real work loops shorter, safer, and easier to inspect."
+      ],
+      seed
+    );
+  }
+
+  if (lower.includes("10 agents") || lower.includes("agents in parallel")) {
+    return pick(
+      [
+        "Running 10 agents only helps if the handoff layer is strong. Without shared state, logs, and review, it just turns one messy workflow into ten.",
+        "Parallel agents sound powerful, but the bottleneck becomes coordination. I would start with one reliable loop before adding more workers.",
+        "The hard part is not launching 10 agents. It is knowing which one did what, why, and whether the final state is trustworthy."
+      ],
+      seed
+    );
+  }
+
+  if (lower.includes("what creates the most opportunities") && lower.includes("fast execution")) {
+    return pick(
+      [
+        "I would pick fast execution, but only if it is aimed at a real problem. Building in public and network help more once there is proof the work compounds.",
+        "Fast execution is the lever, but strong taste decides where it points. A network amplifies the work after the signal is already there.",
+        "AI expertise helps, but fast execution with a tight feedback loop probably creates the most opportunities. The loop matters more than the label."
+      ],
+      seed
+    );
+  }
+
+  if (lower.includes("claude code") && lower.includes("codex") && lower.includes("switch")) {
+    return pick(
+      [
+        "I would not switch just for novelty. I would switch if Codex gives me a cleaner review loop and fewer moments where I have to reconstruct context.",
+        "The switch only makes sense if it changes the daily loop: faster edits, clearer diffs, and fewer hidden assumptions. Otherwise it is just tool churn.",
+        "I would compare them on recovery, not peak output. Which one makes it easier to catch and correct a bad direction?"
+      ],
+      seed
+    );
+  }
+
+  if (lower.includes("future-proof career") && lower.includes("ai")) {
+    return "The future-proof part is not a title. It is being the person who can turn messy workflows into systems other people can actually trust.";
+  }
+
+  return null;
 }
 
 function mockPost(): string {
@@ -278,10 +442,15 @@ function mockReply(userContent: string): string {
   const originalPost = postMatch?.[1]?.trim() || "";
   const lower = originalPost.toLowerCase();
   const seed = hashText(originalPost);
+  const specificReply = specificLocalReply(originalPost, lower, seed);
+  if (specificReply) return specificReply;
+
   const topic = detectReplyTopic(lower);
+  const intent = detectPostIntent(originalPost, lower);
+  const style = detectReplyStyle(intent, seed);
   const anchor = extractAnchor(originalPost);
 
-  return localReplyFromParts(topic, anchor, seed);
+  return localReplyFromParts(topic, intent, style, anchor, seed);
 }
 
 function mockScore(userContent: string) {
@@ -312,9 +481,14 @@ function mockScore(userContent: string) {
   const relevantTerms = [
     "ai",
     "agent",
+    "agents",
     "automation",
+    "builder",
+    "build",
     "claude",
     "codex",
+    "coding",
+    "developer",
     "gpt",
     "local",
     "operator",
@@ -322,12 +496,25 @@ function mockScore(userContent: string) {
     "tool",
     "workflow"
   ];
-  const matches = relevantTerms.filter((term) => lower.includes(term));
-  const score = matches.length > 0 ? Math.min(9, 7 + matches.length) : 5;
+  const matches = relevantTerms.filter((term) => containsTerm(scoredPost, term));
+  const engagementSignals = [
+    /\?/,
+    /\b(which|what|why|how|thoughts|honest|team|vs|or)\b/i,
+    /\b(building|shipping|launched|coding|developer|founder|product)\b/i
+  ].filter((pattern) => pattern.test(scoredPost));
+  const spamSignals = [
+    /\b(follow|drop your|looking to connect|connect with|let['’]?s connect|let['’]?s grow|say hello|dm me|giveaway|airdrop)\b/i,
+    /\$[A-Z]{2,8}\b/,
+    /\b(token|crypto|trader|trading)\b/i
+  ].filter((pattern) => pattern.test(scoredPost));
+  const rawScore = matches.length > 0 ? 6 + matches.length + engagementSignals.length : 4 + engagementSignals.length;
+  const spamPenalty = spamSignals.length * 4;
+  const cappedScore = spamSignals.length > 0 ? Math.min(7, rawScore - spamPenalty) : rawScore;
+  const score = Math.min(9, Math.max(1, cappedScore));
 
   return {
     score,
-    reason: `Mock AI score based on local keyword relevance: ${matches.join(", ") || "general builder topic"}.`,
+    reason: `Local score from relevance (${matches.join(", ") || "general builder topic"}) and engagement signals (${engagementSignals.length}).`,
     risk_flags: []
   };
 }
