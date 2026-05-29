@@ -1,15 +1,21 @@
 :root {
-  color-scheme: light;
-  --bg: #f7f8fa;
-  --surface: #ffffff;
-  --surface-alt: #eef4f2;
-  --text: #17191c;
-  --muted: #606875;
-  --line: #d9dee5;
-  --accent: #0f766e;
-  --accent-dark: #115e59;
-  --danger: #b42318;
-  --warning: #a15c07;
+  color-scheme: dark;
+  --bg: #090d13;
+  --surface: #111823;
+  --surface-alt: #162231;
+  --surface-hover: #192636;
+  --text: #edf4ff;
+  --muted: #93a4b8;
+  --line: #263447;
+  --accent: #38bdf8;
+  --accent-dark: #0ea5e9;
+  --accent-soft: #0b3850;
+  --danger: #fb7185;
+  --danger-soft: #3b1721;
+  --warning: #fbbf24;
+  --warning-soft: #3b2b10;
+  --success: #34d399;
+  --success-soft: #0f3d31;
 }
 
 * {
@@ -33,7 +39,7 @@ body {
 button {
   border: 1px solid var(--line);
   border-radius: 6px;
-  background: var(--surface);
+  background: #0d141f;
   color: var(--text);
   cursor: pointer;
   font: inherit;
@@ -41,14 +47,21 @@ button {
   padding: 0 12px;
 }
 
+button:hover {
+  background: var(--surface-hover);
+  border-color: #38506c;
+}
+
 button.primary {
   border-color: var(--accent);
   background: var(--accent);
-  color: white;
+  color: #04111d;
+  font-weight: 650;
 }
 
 button.primary:hover {
   background: var(--accent-dark);
+  border-color: var(--accent-dark);
 }
 
 button:disabled {
@@ -115,6 +128,10 @@ h2 {
   padding: 14px;
 }
 
+.metric span {
+  color: var(--muted);
+}
+
 .metric strong {
   display: block;
   font-size: 24px;
@@ -132,13 +149,13 @@ h2 {
 }
 
 .status.on {
-  background: #dff3ea;
-  color: #12613d;
+  background: var(--success-soft);
+  color: var(--success);
 }
 
 .status.off {
-  background: #f4e6df;
-  color: #7b341f;
+  background: var(--danger-soft);
+  color: var(--danger);
 }
 
 .actions {
@@ -178,6 +195,10 @@ h2 {
   display: grid;
   gap: 6px;
   padding: 12px 14px;
+}
+
+.row:nth-child(even) {
+  background: #0f1722;
 }
 
 .row:last-child {
