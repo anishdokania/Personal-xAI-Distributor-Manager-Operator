@@ -39,6 +39,153 @@ function includesAny(text: string, terms: string[]): boolean {
   return terms.some((term) => text.includes(term));
 }
 
+function cleanAnchor(text: string): string {
+  return text
+    .replace(/https?:\/\/\S+/g, "")
+    .replace(/[@#][\w_]+/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function extractAnchor(text: string): string {
+  const cleaned = cleanAnchor(text);
+  const quoted = cleaned.match(/[“"]([^”"]{8,80})[”"]/);
+  if (quoted?.[1]) return quoted[1];
+
+  const question = cleaned.match(/([^.!?]{8,90}\?)/);
+  if (question?.[1]) return question[1].trim();
+
+  const sentence = cleaned
+    .split(/[.!?]\s+/)
+    .map((part) => part.trim())
+    .find((part) => part.length >= 8);
+  if (sentence && sentence.length <= 80) return sentence;
+  if (sentence) return sentence.split(" ").slice(0, 9).join(" ");
+
+  const words = cleaned.split(" ").filter(Boolean);
+  return words.slice(0, 9).join(" ");
+}
+
+function trimReply(text: string, maxLength = 230): string {
+  if (text.length <= maxLength) return text;
+
+  const trimmed = text.slice(0, maxLength).replace(/\s+\S*$/, "").replace(/[.,;:!?-]+$/, "");
+  return `${trimmed}.`;
+}
+
+type LocalReplyTopic =
+  | "tool_choice"
+  | "vibe_coding"
+  | "source_control"
+  | "building"
+  | "cost"
+  | "dev_workflow"
+  | "ai_general";
+
+function detectReplyTopic(lower: string): LocalReplyTopic {
+  if (includesAny(lower, ["claude", "codex", "chatgpt", "gpt", "cursor", "model"])) return "tool_choice";
+  if (lower.includes("vibe coding") || lower.includes("vibecoder")) return "vibe_coding";
+  if (includesAny(lower, ["local", "github", "gitlab", "bitbucket", "repo", "repository"])) return "source_control";
+  if (includesAny(lower, ["subscription", "price", "cost", "$", "plan", "limit"])) return "cost";
+  if (includesAny(lower, ["building", "build", "product", "ship", "startup", "audience"])) return "building";
+  if (includesAny(lower, ["engineering", "developer", "code", "coding", "deploy", "stack"])) return "dev_workflow";
+  return "ai_general";
+}
+
+function localReplyFromParts(topic: LocalReplyTopic, anchor: string, seed: number): string {
+  const openings: Record<LocalReplyTopic, string[]> = {
+    tool_choice: [
+      "I would decide this by workflow, not brand.",
+      "The honest answer is probably task-specific.",
+      "The model matters, but the loop matters more."
+    ],
+    vibe_coding: [
+      "Vibe coding works best when review stays in the loop.",
+      "The speed is useful, but the review habit is the real guardrail.",
+      "I like the fast iteration part, as long as the diff still gets read."
+    ],
+    source_control: [
+      "I like keeping the source of truth somewhere boring and inspectable.",
+      "The storage choice matters less than whether recovery is easy.",
+      "Local-first only works if the workflow stays easy to audit."
+    ],
+    building: [
+      "Small practical tools are underrated.",
+      "I like builds that start painfully specific.",
+      "The best product signal is usually a repeated annoyance getting smaller."
+    ],
+    cost: [
+      "Cost starts to matter once a tool becomes part of the daily loop.",
+      "I would judge the spend by repeated workflow value.",
+      "The best subscription is the one that removes real drag every week."
+    ],
+    dev_workflow: [
+      "Developer tools are best when they preserve judgment.",
+      "The sweet spot is less setup and more understanding.",
+      "A good dev workflow should make review easier, not optional."
+    ],
+    ai_general: [
+      "The useful version is usually narrower than the hype.",
+      "AI gets interesting when it shortens a loop you already understand.",
+      "The practical edge is not magic, it is faster iteration with visibility."
+    ]
+  };
+
+  const insights: Record<LocalReplyTopic, string[]> = {
+    tool_choice: [
+      "I care most about context, visible changes, and how quickly I can correct it.",
+      "The winner is the one that keeps momentum without hiding assumptions.",
+      "Benchmarks matter less to me than whether I can finish the loop cleanly."
+    ],
+    vibe_coding: [
+      "Fast generation becomes risky when it turns into blind acceptance.",
+      "The danger is not using AI, it is skipping the part where you understand the change.",
+      "It should feel like acceleration, not outsourcing your judgment."
+    ],
+    source_control: [
+      "If something breaks, I want logs, history, and a simple path back.",
+      "Automation feels safer when state is visible and boring to inspect.",
+      "Trust comes from knowing where the work lives and what changed."
+    ],
+    building: [
+      "You learn faster when the surface area is small enough to test honestly.",
+      "A narrow workflow is easier to validate than a broad promise.",
+      "The first version should prove the problem before it tries to impress anyone."
+    ],
+    cost: [
+      "Predictable cost and clear fallback paths become underrated very quickly.",
+      "The question is whether it saves attention, not just whether it looks powerful.",
+      "If it earns a daily slot, the price is easier to reason about."
+    ],
+    dev_workflow: [
+      "Less friction is great, but not if the reasoning disappears with it.",
+      "The best tools remove repetitive steps while keeping the system legible.",
+      "Speed is only useful if you can still explain what shipped."
+    ],
+    ai_general: [
+      "One clear task, visible tradeoffs, and an easy stop button beat vague autonomy.",
+      "It works better as a small loop around real work than as a giant abstraction.",
+      "The more visible the loop, the easier it is to trust the output."
+    ]
+  };
+
+  const endings = [
+    "That is the part I would optimize for.",
+    "That feels like the practical test.",
+    "That is where the tool starts earning trust.",
+    "That is the difference between leverage and noise.",
+    "That is the bit I would want to measure."
+  ];
+  const opening = pick(openings[topic], seed);
+  const insight = pick(insights[topic], seed * 3);
+  const ending = pick(endings, seed * 7);
+  const anchorLine = anchor.length > 0 && anchor.length <= 56 ? ` On \"${anchor}\": ` : " ";
+  const base = `${opening}${anchorLine}${insight}`;
+  const withEnding = `${base} ${ending}`;
+
+  return withEnding.length <= 230 ? withEnding : trimReply(base);
+}
+
 function mockPost(): string {
   const curatedPosts = [
     "The useful version of a personal AI operator is not flashy. It watches a small workflow, keeps a local trail, and stops cleanly when you ask it to.",
@@ -131,108 +278,10 @@ function mockReply(userContent: string): string {
   const originalPost = postMatch?.[1]?.trim() || "";
   const lower = originalPost.toLowerCase();
   const seed = hashText(originalPost);
+  const topic = detectReplyTopic(lower);
+  const anchor = extractAnchor(originalPost);
 
-  if (lower.includes("$20") || lower.includes("20") && (lower.includes("claude") || lower.includes("codex"))) {
-    return pick(
-      [
-        "If I only had $20, I would pick the one that fits the workflow I repeat daily. The model matters, but the feedback loop matters more.",
-        "At that price point I would optimize for the tool I actually open every day, not the one with the flashiest benchmark.",
-        "I would choose based on where the friction is: planning, editing, review, or shipping. The best $20 depends on the bottleneck."
-      ],
-      seed
-    );
-  }
-
-  if (lower.includes("team claude") || lower.includes("team chatgpt")) {
-    return pick(
-      [
-        "I am less loyal to a team than to the loop: fast edits, visible diffs, and enough context that I can still reason about the change.",
-        "For me it comes down to the task. Some tools are better thinking partners, others are better at staying inside the code loop.",
-        "The winner is usually whichever one helps me keep momentum without losing review discipline."
-      ],
-      seed
-    );
-  }
-
-  if (lower.includes("vibe coding")) {
-    return pick(
-      [
-        "For vibe coding, the tool matters less than whether it keeps you in review mode. Fast generation is great until you stop reading the diff.",
-        "The best version of vibe coding still has a review loop. The danger starts when the speed makes you stop checking assumptions.",
-        "It works best when it feels like fast iteration, not blind acceptance."
-      ],
-      seed
-    );
-  }
-
-  if (lower.includes("weekly limit") || lower.includes("limit")) {
-    return "The usage limit pain is real. It is one reason local workflows and clear fallback tools become more valuable over time.";
-  }
-
-  if (lower.includes("audience") && lower.includes("product")) {
-    return "The product compounds if it solves a real problem. The audience compounds if it keeps you honest about which problem matters.";
-  }
-
-  if (includesAny(lower, ["local", "github", "gitlab", "bitbucket", "repo", "repository"])) {
-    return pick(
-      [
-        "The local-first part matters. It makes the system easier to inspect, pause, and trust before it gets any real autonomy.",
-        "I like keeping the source of truth somewhere boring and inspectable. It makes automation feel much less fragile.",
-        "The storage choice matters less than whether the workflow is recoverable when something goes sideways."
-      ],
-      seed
-    );
-  }
-
-  if (includesAny(lower, ["claude", "codex", "chatgpt", "gpt", "cursor"])) {
-    return pick(
-      [
-        "I think the honest answer is workflow-specific. The better tool is usually the one that keeps more context without hiding what changed.",
-        "The interesting question is not which model is smartest, but which one helps you finish the loop with fewer hidden assumptions.",
-        "I keep coming back to context plus control. If a tool gives me both, it usually wins the workflow."
-      ],
-      seed
-    );
-  }
-
-  if (lower.includes("building") || lower.includes("build")) {
-    return pick(
-      [
-        "Small practical tools are underrated. The useful ones usually start as one annoying workflow made a little less manual.",
-        "The best things to build are often painfully specific at first. That is what makes them easy to test honestly.",
-        "I like builds that start with a narrow workflow. You learn faster when the surface area is small."
-      ],
-      seed
-    );
-  }
-
-  if (lower.includes("subscription") || lower.includes("price") || lower.includes("cost")) {
-    return "This is why I keep getting pulled toward local-first tools. Predictable cost and inspectable state matter more over time.";
-  }
-
-  if (lower.includes("engineering") || lower.includes("developer") || lower.includes("code")) {
-    return pick(
-      [
-        "It feels more fun when the tool handles setup and repetition, but less fun when it hides the reasoning you need to learn from.",
-        "The sweet spot is when the tool removes drag but still leaves you close enough to understand the system.",
-        "Developer tools get better when they preserve judgment instead of only optimizing for speed."
-      ],
-      seed
-    );
-  }
-
-  if (lower.includes("ai")) {
-    return pick(
-      [
-        "The useful version is usually narrower than the hype: one clear task, visible tradeoffs, and a human still able to steer.",
-        "AI feels most useful to me when it shortens a loop I already understand instead of inventing a vague new one.",
-        "The practical edge is not magic. It is faster iteration with enough visibility to keep your judgment involved."
-      ],
-      seed
-    );
-  }
-
-  return "This is the right shape: keep the automation small, observable, and easy to interrupt before making it more capable.";
+  return localReplyFromParts(topic, anchor, seed);
 }
 
 function mockScore(userContent: string) {
