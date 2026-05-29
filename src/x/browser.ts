@@ -1,5 +1,6 @@
 import { chromium, type BrowserContext, type Page } from "playwright";
 import fs from "node:fs/promises";
+import path from "node:path";
 import { getEffectiveConfig, recordAction } from "../db";
 
 export type XBrowserSession = {
@@ -58,6 +59,21 @@ async function connectToExistingXBrowser(port: number): Promise<XBrowserSession 
   };
 }
 
+async function profileAppearsLocked(userDataDir: string): Promise<boolean> {
+  const lockFiles = ["SingletonLock", "SingletonSocket", "SingletonCookie"];
+
+  for (const fileName of lockFiles) {
+    try {
+      await fs.lstat(path.join(userDataDir, fileName));
+      return true;
+    } catch {
+      // Missing lock files are expected when no Chromium owns the profile.
+    }
+  }
+
+  return false;
+}
+
 export async function openXBrowser(options: { headless?: boolean } = {}): Promise<XBrowserSession> {
   const runtimeConfig = getEffectiveConfig();
   await fs.mkdir(runtimeConfig.x.userDataDir, { recursive: true });
@@ -65,6 +81,12 @@ export async function openXBrowser(options: { headless?: boolean } = {}): Promis
   if (!(options.headless ?? runtimeConfig.x.headless)) {
     const existingSession = await connectToExistingXBrowser(runtimeConfig.x.cdpPort);
     if (existingSession) return existingSession;
+
+    if (await profileAppearsLocked(runtimeConfig.x.userDataDir)) {
+      throw new Error(
+        `The X Chromium profile is already open, but automation cannot connect to it on port ${runtimeConfig.x.cdpPort}. Close every Chrome for Testing/X window, click Open X browser again, then rerun the agent.`
+      );
+    }
   }
 
   await logBrowserAction("Launching persistent X browser session", {
