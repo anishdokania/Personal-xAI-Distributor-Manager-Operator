@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import { config } from "./config";
+import { getEffectiveConfig } from "./db";
 
 type ChatRole = "system" | "user" | "assistant";
 
@@ -9,6 +10,65 @@ export type ChatMessage = {
 };
 
 let client: OpenAI | null = null;
+
+function latestUserContent(messages: ChatMessage[]): string {
+  return [...messages].reverse().find((message) => message.role === "user")?.content || "";
+}
+
+function mockPost(): string {
+  return "Personal automation feels best when it is boring: clear inputs, visible logs, easy pause buttons, and no mystery about what happened while you were away.";
+}
+
+function mockReply(userContent: string): string {
+  const postMatch = userContent.match(/Original post:\s*([\s\S]*?)(?:\n\nAuthor:|$)/i);
+  const originalPost = postMatch?.[1]?.trim() || "";
+
+  if (originalPost.toLowerCase().includes("local")) {
+    return "The local-first part matters. It makes the system easier to inspect, pause, and trust before it gets any real autonomy.";
+  }
+
+  return "This is the right shape: keep the automation small, observable, and easy to interrupt before making it more capable.";
+}
+
+function mockScore(userContent: string) {
+  const lower = userContent.toLowerCase();
+  const risky = [
+    "politics",
+    "religion",
+    "medical",
+    "legal",
+    "tragedy",
+    "adult",
+    "harassment",
+    "drama"
+  ].filter((topic) => lower.includes(topic));
+
+  if (risky.length > 0) {
+    return {
+      score: 1,
+      reason: `Mock AI skipped this because it appears to touch forbidden topics: ${risky.join(", ")}.`,
+      risk_flags: risky
+    };
+  }
+
+  const relevantTerms = ["ai", "agent", "automation", "local", "workflow", "operator", "tool"];
+  const matches = relevantTerms.filter((term) => lower.includes(term));
+  const score = Math.min(9, Math.max(5, 5 + matches.length));
+
+  return {
+    score,
+    reason: `Mock AI score based on local keyword relevance: ${matches.join(", ") || "general builder topic"}.`,
+    risk_flags: []
+  };
+}
+
+function mockText(messages: ChatMessage[]): string {
+  const system = messages.find((message) => message.role === "system")?.content.toLowerCase() || "";
+  const userContent = latestUserContent(messages);
+
+  if (system.includes("replies")) return mockReply(userContent);
+  return mockPost();
+}
 
 function getClient(): OpenAI {
   if (!config.openaiApiKey) {
@@ -26,6 +86,8 @@ export async function generateText(
   messages: ChatMessage[],
   options: { temperature?: number; maxTokens?: number } = {}
 ): Promise<string> {
+  if (getEffectiveConfig().mockAiEnabled) return mockText(messages);
+
   const completion = await getClient().chat.completions.create({
     model: config.openaiModel,
     messages,
@@ -53,6 +115,8 @@ export async function generateJson<T>(
   messages: ChatMessage[],
   options: { temperature?: number; maxTokens?: number } = {}
 ): Promise<T> {
+  if (getEffectiveConfig().mockAiEnabled) return mockScore(latestUserContent(messages)) as T;
+
   const completion = await getClient().chat.completions.create({
     model: config.openaiModel,
     messages,

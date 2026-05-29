@@ -34,10 +34,19 @@ export default function DashboardPage() {
         <DashboardControls
           autoPostEnabled={data.settings.autoPostEnabled}
           autoReplyEnabled={data.settings.autoReplyEnabled}
+          mockAiEnabled={data.settings.mockAiEnabled}
         />
       </div>
 
       <section className="grid metrics">
+        <div className="metric">
+          <span>AI mode</span>
+          <strong>
+            <span className={statusClass(data.settings.mockAiEnabled)}>
+              {data.settings.mockAiEnabled ? "Mock" : "OpenAI"}
+            </span>
+          </strong>
+        </div>
         <div className="metric">
           <span>Auto-post</span>
           <strong>

@@ -6,6 +6,7 @@ import { useState } from "react";
 type DashboardControlsProps = {
   autoPostEnabled: boolean;
   autoReplyEnabled: boolean;
+  mockAiEnabled: boolean;
 };
 
 async function postJson(url: string, body?: unknown): Promise<unknown> {
@@ -25,7 +26,8 @@ async function postJson(url: string, body?: unknown): Promise<unknown> {
 
 export default function DashboardControls({
   autoPostEnabled,
-  autoReplyEnabled
+  autoReplyEnabled,
+  mockAiEnabled
 }: DashboardControlsProps) {
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
@@ -74,6 +76,16 @@ export default function DashboardControls({
           }
         >
           Open X browser
+        </button>
+        <button
+          disabled={Boolean(busy)}
+          onClick={() =>
+            run(mockAiEnabled ? "Mock AI disabled" : "Mock AI enabled", () =>
+              postJson("/api/settings/mock-ai", { enabled: !mockAiEnabled })
+            )
+          }
+        >
+          {mockAiEnabled ? "Use OpenAI" : "Use mock AI"}
         </button>
         <button
           disabled={Boolean(busy)}

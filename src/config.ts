@@ -41,6 +41,7 @@ export type OperatorConfig = {
   topics: string[];
   forbiddenTopics: string[];
   toneStyle: string;
+  mockAiEnabled: boolean;
   openaiApiKey?: string;
   openaiModel: string;
   databasePath: string;
@@ -78,6 +79,7 @@ export const config: OperatorConfig = {
     "drama"
   ]),
   toneStyle: process.env.TONE_STYLE?.trim() || "concise, thoughtful, specific, plainspoken",
+  mockAiEnabled: booleanFromEnv("MOCK_AI", false),
   openaiApiKey: process.env.OPENAI_API_KEY,
   openaiModel: process.env.OPENAI_MODEL || "gpt-4.1-mini",
   databasePath: resolveFromRoot(process.env.DATABASE_PATH || "./data/operator.sqlite"),

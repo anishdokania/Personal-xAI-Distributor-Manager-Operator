@@ -489,7 +489,8 @@ export function getEffectiveConfig(): OperatorConfig {
     autoReplyEnabled: booleanSetting("auto_reply_enabled", config.autoReplyEnabled),
     topics: listSetting("topics", config.topics),
     forbiddenTopics: listSetting("forbidden_topics", config.forbiddenTopics),
-    toneStyle: getSetting("tone_style") || config.toneStyle
+    toneStyle: getSetting("tone_style") || config.toneStyle,
+    mockAiEnabled: booleanSetting("mock_ai", config.mockAiEnabled)
   };
 }
 

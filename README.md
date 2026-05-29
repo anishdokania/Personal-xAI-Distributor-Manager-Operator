@@ -33,6 +33,14 @@ Then edit `.env` and add:
 OPENAI_API_KEY=your_api_key
 ```
 
+To test the workflow without OpenAI credits, use:
+
+```bash
+MOCK_AI=true
+```
+
+Mock mode generates local placeholder posts, replies, and scores. It is for plumbing demos only, not production-quality writing.
+
 The default safety posture is conservative:
 
 - `AUTO_POST_ENABLED=false`
@@ -61,6 +69,7 @@ MAX_FEED_POSTS_TO_SCAN=25
 MIN_REPLY_SCORE=8
 AUTO_POST_ENABLED=false
 AUTO_REPLY_ENABLED=false
+MOCK_AI=false
 TOPICS=personal AI operators,local-first automation,practical AI workflows
 FORBIDDEN_TOPICS=politics,religion,medical,legal,tragedy,adult,harassment,drama
 TONE_STYLE=concise,thoughtful,specific,plainspoken,curious
@@ -97,6 +106,7 @@ Dashboard buttons:
 - Run post agent now
 - Run reply agent now
 - Open X browser
+- Use mock AI / Use OpenAI
 - Pause/resume auto-post
 - Pause/resume auto-reply
 
