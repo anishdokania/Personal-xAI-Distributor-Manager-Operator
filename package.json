@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit",
     "db:init": "tsx scripts/init-db.ts",
     "x:login": "tsx scripts/login-x.ts",
+    "x:open": "tsx scripts/open-x-browser.ts",
     "agent:post": "tsx scripts/run-post-agent.ts",
     "agent:reply": "tsx scripts/run-reply-agent.ts",
     "scheduler": "tsx src/scheduler.ts"

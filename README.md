@@ -96,6 +96,7 @@ Dashboard buttons:
 
 - Run post agent now
 - Run reply agent now
+- Open X browser
 - Pause/resume auto-post
 - Pause/resume auto-reply
 

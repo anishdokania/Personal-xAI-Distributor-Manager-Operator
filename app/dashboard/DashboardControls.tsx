@@ -65,6 +65,12 @@ export default function DashboardControls({
         </button>
         <button
           disabled={Boolean(busy)}
+          onClick={() => run("X browser", () => postJson("/api/x/open"))}
+        >
+          Open X browser
+        </button>
+        <button
+          disabled={Boolean(busy)}
           onClick={() =>
             run(autoPostEnabled ? "Auto-post paused" : "Auto-post resumed", () =>
               postJson("/api/settings/autopost", { enabled: !autoPostEnabled })
