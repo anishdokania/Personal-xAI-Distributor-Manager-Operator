@@ -78,6 +78,7 @@ function trimReply(text: string, maxLength = 230): string {
 }
 
 type LocalReplyTopic =
+  | "connection"
   | "tool_choice"
   | "vibe_coding"
   | "source_control"
@@ -89,7 +90,20 @@ type LocalReplyTopic =
 type LocalPostIntent = "question" | "comparison" | "complaint" | "launch" | "advice" | "opinion";
 type LocalReplyStyle = "answer" | "nuance" | "counterpoint" | "principle" | "question";
 
+function hasConnectionSignal(text: string): boolean {
+  return /\b(looking to connect|connect with|let['’]?s connect|say hi|say hello|building in|people interested in|builders in)\b/i.test(text);
+}
+
+function hasConnectionRelevance(text: string): boolean {
+  return /\b(ai|agents?|automation|saas|startup|founders?|builders?|developers?|devs?|indie hackers?|product|shipping|coding|full stack|backend|frontend|devops|tools?)\b/i.test(text);
+}
+
+function isBadConnectionPost(text: string): boolean {
+  return /\b(follow|drop yours?|let['’]?s grow|grow together|dm me|giveaway|airdrop|follower-to-following|gain followers|crypto|token|traders?|trading)\b/i.test(text);
+}
+
 function detectReplyTopic(lower: string): LocalReplyTopic {
+  if (hasConnectionSignal(lower) && hasConnectionRelevance(lower)) return "connection";
   if (includesAny(lower, ["subscription", "price", "cost", "$", "plan", "limit"])) return "cost";
   if (includesAny(lower, ["claude", "codex", "chatgpt", "gpt", "cursor", "model"])) return "tool_choice";
   if (lower.includes("vibe coding") || lower.includes("vibecoder")) return "vibe_coding";
@@ -129,6 +143,11 @@ function localReplyFromParts(
   seed: number
 ): string {
   const openings: Record<LocalReplyTopic, string[]> = {
+    connection: [
+      "Good crowd to be around.",
+      "This is the corner of X I keep coming back to.",
+      "That is exactly the lane I am interested in."
+    ],
     tool_choice: [
       "I would decide this by workflow, not brand.",
       "The honest answer is probably task-specific.",
@@ -167,6 +186,11 @@ function localReplyFromParts(
   };
 
   const insights: Record<LocalReplyTopic, string[]> = {
+    connection: [
+      "I am focused on local AI operators, browser automation, and the boring parts that make agents trustworthy.",
+      "The useful overlap for me is AI tools that turn repeated workflows into visible, inspectable systems.",
+      "I am most interested in builders making small tools that solve real workflow drag before they try to look big."
+    ],
     tool_choice: [
       "I care most about context, visible changes, and how quickly I can correct it.",
       "The winner is the one that keeps momentum without hiding assumptions.",
@@ -277,6 +301,18 @@ function localReplyFromParts(
 }
 
 function specificLocalReply(originalPost: string, lower: string, seed: number): string | null {
+  if (hasConnectionSignal(lower) && hasConnectionRelevance(lower) && !isBadConnectionPost(lower)) {
+    return pick(
+      [
+        "Good crowd to be around. I’m building in the local AI operator / browser automation lane, especially the boring parts: logs, limits, review, and safe autonomy.",
+        "Same orbit here: AI tools, browser automation, and local-first agents. I’m most interested in systems that are useful before they are flashy.",
+        "This is my lane too: AI agents, practical automation, and small tools that remove daily friction without becoming black boxes.",
+        "I’m in the AI automation corner as well. The work I find most interesting is turning messy browser workflows into inspectable loops."
+      ],
+      seed + originalPost.length
+    );
+  }
+
   if (lower.includes("one language") && includesAny(lower, ["python", "javascript", "typescript", "rust"])) {
     return pick(
       [
@@ -500,21 +536,25 @@ function mockScore(userContent: string) {
   const engagementSignals = [
     /\?/,
     /\b(which|what|why|how|thoughts|honest|team|vs|or)\b/i,
-    /\b(building|shipping|launched|coding|developer|founder|product)\b/i
+    /\b(building|shipping|launched|coding|developer|founder|product)\b/i,
+    /\b(looking to connect|connect with|let['’]?s connect|say hi|say hello)\b/i
   ].filter((pattern) => pattern.test(scoredPost));
   const spamSignals = [
-    /\b(follow|drop your|looking to connect|connect with|let['’]?s connect|let['’]?s grow|say hello|dm me|giveaway|airdrop)\b/i,
+    /\b(follow|drop your|let['’]?s grow|grow together|dm me|giveaway|airdrop|follower-to-following|gain followers)\b/i,
     /\$[A-Z]{2,8}\b/,
     /\b(token|crypto|trader|trading)\b/i
   ].filter((pattern) => pattern.test(scoredPost));
   const rawScore = matches.length > 0 ? 6 + matches.length + engagementSignals.length : 4 + engagementSignals.length;
   const spamPenalty = spamSignals.length * 4;
-  const cappedScore = spamSignals.length > 0 ? Math.min(7, rawScore - spamPenalty) : rawScore;
+  const connectionOpportunity =
+    hasConnectionSignal(scoredPost) && hasConnectionRelevance(scoredPost) && !isBadConnectionPost(scoredPost);
+  const boostedScore = connectionOpportunity ? Math.max(rawScore, 8 + Math.min(1, matches.length)) : rawScore;
+  const cappedScore = spamSignals.length > 0 ? Math.min(7, boostedScore - spamPenalty) : boostedScore;
   const score = Math.min(9, Math.max(1, cappedScore));
 
   return {
     score,
-    reason: `Local score from relevance (${matches.join(", ") || "general builder topic"}) and engagement signals (${engagementSignals.length}).`,
+    reason: `Local score from relevance (${matches.join(", ") || "general builder topic"}), engagement signals (${engagementSignals.length}), connection opportunity (${connectionOpportunity ? "yes" : "no"}).`,
     risk_flags: []
   };
 }
