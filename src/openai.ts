@@ -21,8 +21,26 @@ function latestUserContent(messages: ChatMessage[]): string {
   return [...messages].reverse().find((message) => message.role === "user")?.content || "";
 }
 
+function hashText(text: string): number {
+  let hash = 0;
+
+  for (let index = 0; index < text.length; index += 1) {
+    hash = (hash * 31 + text.charCodeAt(index)) >>> 0;
+  }
+
+  return hash;
+}
+
+function pick<T>(items: T[], seed: number): T {
+  return items[Math.abs(seed) % items.length];
+}
+
+function includesAny(text: string, terms: string[]): boolean {
+  return terms.some((term) => text.includes(term));
+}
+
 function mockPost(): string {
-  const posts = [
+  const curatedPosts = [
     "The useful version of a personal AI operator is not flashy. It watches a small workflow, keeps a local trail, and stops cleanly when you ask it to.",
     "I keep coming back to this: automation needs an off switch as much as it needs a clever model.",
     "A good personal agent should feel inspectable. You should know what it saw, what it decided, and what it did before you trust it with more.",
@@ -70,27 +88,81 @@ function mockPost(): string {
   ];
 
   const globalState = globalThis as XOperatorGlobal;
-  const nextIndex = ((globalState[mockPostIndexKey] ?? -1) + 1) % posts.length;
+  const nextIndex = (globalState[mockPostIndexKey] ?? -1) + 1;
   globalState[mockPostIndexKey] = nextIndex;
 
-  return posts[nextIndex];
+  if (nextIndex < curatedPosts.length) return curatedPosts[nextIndex];
+
+  const subjects = [
+    "personal AI operators",
+    "local-first automation",
+    "browser agents",
+    "small workflow tools",
+    "agent dashboards",
+    "AI-assisted routines",
+    "local memory",
+    "browser automation"
+  ];
+  const observations = [
+    "work best when the loop is visible",
+    "get safer when every action leaves a trail",
+    "become useful when they remove one repeated decision",
+    "need boring controls more than clever demos",
+    "should start with drafts before they earn autonomy",
+    "are easier to trust when failure is easy to inspect",
+    "feel better when the human can interrupt at any point",
+    "should make context easier to carry, not harder to audit"
+  ];
+  const endings = [
+    "That is the difference between automation and surprise.",
+    "Small, observable wins compound faster than giant leaps.",
+    "I would rather debug a simple loop than admire a mysterious one.",
+    "The quiet details are usually the product.",
+    "The goal is less tab-opening, not less judgment.",
+    "That is where trust starts to become practical."
+  ];
+  const seed = nextIndex - curatedPosts.length;
+
+  return `${pick(subjects, seed)} ${pick(observations, seed * 3)}. ${pick(endings, seed * 7)}`;
 }
 
 function mockReply(userContent: string): string {
   const postMatch = userContent.match(/Original post:\s*([\s\S]*?)(?:\n\nAuthor:|$)/i);
   const originalPost = postMatch?.[1]?.trim() || "";
   const lower = originalPost.toLowerCase();
+  const seed = hashText(originalPost);
 
   if (lower.includes("$20") || lower.includes("20") && (lower.includes("claude") || lower.includes("codex"))) {
-    return "If I only had $20, I would pick the one that fits the workflow I repeat daily. The model matters, but the feedback loop matters more.";
+    return pick(
+      [
+        "If I only had $20, I would pick the one that fits the workflow I repeat daily. The model matters, but the feedback loop matters more.",
+        "At that price point I would optimize for the tool I actually open every day, not the one with the flashiest benchmark.",
+        "I would choose based on where the friction is: planning, editing, review, or shipping. The best $20 depends on the bottleneck."
+      ],
+      seed
+    );
   }
 
   if (lower.includes("team claude") || lower.includes("team chatgpt")) {
-    return "I am less loyal to a team than to the loop: fast edits, visible diffs, and enough context that I can still reason about the change.";
+    return pick(
+      [
+        "I am less loyal to a team than to the loop: fast edits, visible diffs, and enough context that I can still reason about the change.",
+        "For me it comes down to the task. Some tools are better thinking partners, others are better at staying inside the code loop.",
+        "The winner is usually whichever one helps me keep momentum without losing review discipline."
+      ],
+      seed
+    );
   }
 
   if (lower.includes("vibe coding")) {
-    return "For vibe coding, the tool matters less than whether it keeps you in review mode. Fast generation is great until you stop reading the diff.";
+    return pick(
+      [
+        "For vibe coding, the tool matters less than whether it keeps you in review mode. Fast generation is great until you stop reading the diff.",
+        "The best version of vibe coding still has a review loop. The danger starts when the speed makes you stop checking assumptions.",
+        "It works best when it feels like fast iteration, not blind acceptance."
+      ],
+      seed
+    );
   }
 
   if (lower.includes("weekly limit") || lower.includes("limit")) {
@@ -101,16 +173,37 @@ function mockReply(userContent: string): string {
     return "The product compounds if it solves a real problem. The audience compounds if it keeps you honest about which problem matters.";
   }
 
-  if (lower.includes("local") || lower.includes("github") || lower.includes("gitlab")) {
-    return "The local-first part matters. It makes the system easier to inspect, pause, and trust before it gets any real autonomy.";
+  if (includesAny(lower, ["local", "github", "gitlab", "bitbucket", "repo", "repository"])) {
+    return pick(
+      [
+        "The local-first part matters. It makes the system easier to inspect, pause, and trust before it gets any real autonomy.",
+        "I like keeping the source of truth somewhere boring and inspectable. It makes automation feel much less fragile.",
+        "The storage choice matters less than whether the workflow is recoverable when something goes sideways."
+      ],
+      seed
+    );
   }
 
-  if (lower.includes("claude") || lower.includes("codex")) {
-    return "I think the honest answer is workflow-specific. The better tool is usually the one that keeps more context without hiding what changed.";
+  if (includesAny(lower, ["claude", "codex", "chatgpt", "gpt", "cursor"])) {
+    return pick(
+      [
+        "I think the honest answer is workflow-specific. The better tool is usually the one that keeps more context without hiding what changed.",
+        "The interesting question is not which model is smartest, but which one helps you finish the loop with fewer hidden assumptions.",
+        "I keep coming back to context plus control. If a tool gives me both, it usually wins the workflow."
+      ],
+      seed
+    );
   }
 
   if (lower.includes("building") || lower.includes("build")) {
-    return "Small practical tools are underrated. The useful ones usually start as one annoying workflow made a little less manual.";
+    return pick(
+      [
+        "Small practical tools are underrated. The useful ones usually start as one annoying workflow made a little less manual.",
+        "The best things to build are often painfully specific at first. That is what makes them easy to test honestly.",
+        "I like builds that start with a narrow workflow. You learn faster when the surface area is small."
+      ],
+      seed
+    );
   }
 
   if (lower.includes("subscription") || lower.includes("price") || lower.includes("cost")) {
@@ -118,11 +211,25 @@ function mockReply(userContent: string): string {
   }
 
   if (lower.includes("engineering") || lower.includes("developer") || lower.includes("code")) {
-    return "It feels more fun when the tool handles setup and repetition, but less fun when it hides the reasoning you need to learn from.";
+    return pick(
+      [
+        "It feels more fun when the tool handles setup and repetition, but less fun when it hides the reasoning you need to learn from.",
+        "The sweet spot is when the tool removes drag but still leaves you close enough to understand the system.",
+        "Developer tools get better when they preserve judgment instead of only optimizing for speed."
+      ],
+      seed
+    );
   }
 
   if (lower.includes("ai")) {
-    return "The useful version is usually narrower than the hype: one clear task, visible tradeoffs, and a human still able to steer.";
+    return pick(
+      [
+        "The useful version is usually narrower than the hype: one clear task, visible tradeoffs, and a human still able to steer.",
+        "AI feels most useful to me when it shortens a loop I already understand instead of inventing a vague new one.",
+        "The practical edge is not magic. It is faster iteration with enough visibility to keep your judgment involved."
+      ],
+      seed
+    );
   }
 
   return "This is the right shape: keep the automation small, observable, and easy to interrupt before making it more capable.";

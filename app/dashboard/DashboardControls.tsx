@@ -80,12 +80,12 @@ export default function DashboardControls({
         <button
           disabled={Boolean(busy)}
           onClick={() =>
-            run(mockAiEnabled ? "Mock AI disabled" : "Mock AI enabled", () =>
+            run(mockAiEnabled ? "Local curator disabled" : "Local curator enabled", () =>
               postJson("/api/settings/mock-ai", { enabled: !mockAiEnabled })
             )
           }
         >
-          {mockAiEnabled ? "Use OpenAI" : "Use mock AI"}
+          {mockAiEnabled ? "Use OpenAI" : "Use local curator"}
         </button>
         <button
           disabled={Boolean(busy)}

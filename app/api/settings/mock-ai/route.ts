@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
   const enabled = typeof body.enabled === "boolean" ? body.enabled : !current;
 
   setSetting("mock_ai", enabled);
-  recordAction("settings", "updated", enabled ? "Mock AI enabled" : "Mock AI disabled");
+  recordAction("settings", "updated", enabled ? "Local curator enabled" : "Local curator disabled");
 
   return NextResponse.json({ ok: true, enabled });
 }

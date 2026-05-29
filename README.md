@@ -39,7 +39,7 @@ To test the workflow without OpenAI credits, use:
 MOCK_AI=true
 ```
 
-Mock mode generates local placeholder posts, replies, and scores. It is for plumbing demos only, not production-quality writing.
+Local curator mode generates posts, replies, and scores without paid API calls. It uses deterministic local rules, topic matching, safety filters, and curated templates. OpenAI mode is still available for richer style matching, but it is optional.
 
 The default safety posture is conservative:
 
@@ -108,7 +108,7 @@ Dashboard buttons:
 - Run post agent now
 - Run reply agent now
 - Open X browser
-- Use mock AI / Use OpenAI
+- Use local curator / Use OpenAI
 - Pause/resume auto-post
 - Pause/resume auto-reply
 

@@ -43,7 +43,7 @@ export default function DashboardPage() {
           <span>AI mode</span>
           <strong>
             <span className={statusClass(data.settings.mockAiEnabled)}>
-              {data.settings.mockAiEnabled ? "Mock" : "OpenAI"}
+              {data.settings.mockAiEnabled ? "Local" : "OpenAI"}
             </span>
           </strong>
         </div>
