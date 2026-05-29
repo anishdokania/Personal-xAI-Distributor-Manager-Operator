@@ -1,28 +1,34 @@
-import { openXBrowser } from "../src/x/browser";
+import { spawn } from "node:child_process";
+import { chromium } from "playwright";
+import { config } from "../src/config";
+import { recordAction, recordError } from "../src/db";
 
-const session = await openXBrowser({ headless: false });
+const executablePath = chromium.executablePath();
+const args = [
+  `--user-data-dir=${config.x.userDataDir}`,
+  "--new-window",
+  "--no-first-run",
+  "--no-default-browser-check",
+  "--disable-search-engine-choice-screen",
+  "https://x.com/home"
+];
 
-let closed = false;
+try {
+  const child = spawn(executablePath, args, {
+    detached: true,
+    stdio: "ignore"
+  });
 
-async function closeSession() {
-  if (closed) return;
-  closed = true;
-  await session.close().catch(() => undefined);
+  child.unref();
+
+  recordAction("xBrowser", "opened", "Opened X browser window", {
+    executablePath,
+    userDataDir: config.x.userDataDir,
+    url: "https://x.com/home"
+  });
+
+  console.log("X browser launch requested for https://x.com/home.");
+} catch (error) {
+  recordError("open-x-browser", error);
+  throw error;
 }
-
-process.on("SIGINT", () => {
-  closeSession().finally(() => process.exit(0));
-});
-
-process.on("SIGTERM", () => {
-  closeSession().finally(() => process.exit(0));
-});
-
-await session.page.goto("https://x.com/home", { waitUntil: "domcontentloaded" });
-await session.page.bringToFront().catch(() => undefined);
-console.log("X browser is open. Log in if needed, then close the browser window when done.");
-
-await new Promise<void>((resolve) => {
-  session.context.on("close", () => resolve());
-});
-await closeSession();
