@@ -81,6 +81,26 @@ function mockReply(userContent: string): string {
   const originalPost = postMatch?.[1]?.trim() || "";
   const lower = originalPost.toLowerCase();
 
+  if (lower.includes("$20") || lower.includes("20") && (lower.includes("claude") || lower.includes("codex"))) {
+    return "If I only had $20, I would pick the one that fits the workflow I repeat daily. The model matters, but the feedback loop matters more.";
+  }
+
+  if (lower.includes("team claude") || lower.includes("team chatgpt")) {
+    return "I am less loyal to a team than to the loop: fast edits, visible diffs, and enough context that I can still reason about the change.";
+  }
+
+  if (lower.includes("vibe coding")) {
+    return "For vibe coding, the tool matters less than whether it keeps you in review mode. Fast generation is great until you stop reading the diff.";
+  }
+
+  if (lower.includes("weekly limit") || lower.includes("limit")) {
+    return "The usage limit pain is real. It is one reason local workflows and clear fallback tools become more valuable over time.";
+  }
+
+  if (lower.includes("audience") && lower.includes("product")) {
+    return "The product compounds if it solves a real problem. The audience compounds if it keeps you honest about which problem matters.";
+  }
+
   if (lower.includes("local") || lower.includes("github") || lower.includes("gitlab")) {
     return "The local-first part matters. It makes the system easier to inspect, pause, and trust before it gets any real autonomy.";
   }
