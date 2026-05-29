@@ -16,7 +16,15 @@ function latestUserContent(messages: ChatMessage[]): string {
 }
 
 function mockPost(): string {
-  return "Personal automation feels best when it is boring: clear inputs, visible logs, easy pause buttons, and no mystery about what happened while you were away.";
+  const posts = [
+    "The useful version of a personal AI operator is not flashy. It watches a small workflow, keeps a local trail, and stops cleanly when you ask it to.",
+    "I keep coming back to this: automation needs an off switch as much as it needs a clever model.",
+    "A good personal agent should feel inspectable. You should know what it saw, what it decided, and what it did before you trust it with more.",
+    "Local-first automation makes experimentation calmer. Break something, inspect the logs, reset the state, try again.",
+    "The hardest part of useful AI automation is not generating text. It is deciding when doing nothing is the better action."
+  ];
+
+  return posts[Math.floor(Date.now() / 1000) % posts.length];
 }
 
 function mockReply(userContent: string): string {

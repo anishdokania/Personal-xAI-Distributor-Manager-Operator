@@ -49,7 +49,7 @@ The default safety posture is conservative:
 - `REPLIES_PER_DAY=5`
 - `MIN_REPLY_SCORE=8`
 
-The dashboard-launched X browser exposes a local debugging port (`X_CDP_PORT=9222`) so agents can reuse the visible browser instead of colliding with its profile lock.
+The dashboard-launched X browser is managed by the local Next.js server so dashboard actions can reuse the same visible Playwright session instead of colliding with its profile lock. If you restart or hot-reload the dev server while that browser is open, close the Chrome for Testing window and click **Open X browser** again.
 
 ## Local Files To Edit
 

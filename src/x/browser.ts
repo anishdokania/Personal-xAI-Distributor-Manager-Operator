@@ -9,6 +9,31 @@ export type XBrowserSession = {
   close: () => Promise<void>;
 };
 
+type OpenXBrowserOptions = {
+  headless?: boolean;
+  keepOpen?: boolean;
+};
+
+type ManagedXBrowserState = {
+  session: XBrowserSession;
+  context: BrowserContext;
+  page: Page;
+};
+
+const managedXBrowserKey = "__personalXOperatorManagedBrowser";
+
+type XOperatorGlobal = typeof globalThis & {
+  [managedXBrowserKey]?: ManagedXBrowserState | null;
+};
+
+function getManagedState(): ManagedXBrowserState | null {
+  return ((globalThis as XOperatorGlobal)[managedXBrowserKey] as ManagedXBrowserState | null | undefined) ?? null;
+}
+
+function setManagedState(state: ManagedXBrowserState | null): void {
+  (globalThis as XOperatorGlobal)[managedXBrowserKey] = state;
+}
+
 export function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -27,38 +52,6 @@ export async function logBrowserAction(message: string, metadata?: unknown): Pro
   console.log(`[browser] ${message}`);
 }
 
-async function isCdpAvailable(port: number): Promise<boolean> {
-  try {
-    const response = await fetch(`http://127.0.0.1:${port}/json/version`, {
-      signal: AbortSignal.timeout(500)
-    });
-    return response.ok;
-  } catch {
-    return false;
-  }
-}
-
-async function connectToExistingXBrowser(port: number): Promise<XBrowserSession | null> {
-  if (!(await isCdpAvailable(port))) return null;
-
-  await logBrowserAction("Connecting to existing X browser session", { cdpPort: port });
-  const browser = await chromium.connectOverCDP(`http://127.0.0.1:${port}`);
-  const context = browser.contexts()[0] || (await browser.newContext());
-  const page = context.pages().find((candidate) => candidate.url().includes("x.com")) || (await context.newPage());
-
-  page.setDefaultTimeout(15_000);
-  page.setDefaultNavigationTimeout(30_000);
-
-  return {
-    context,
-    page,
-    close: async () => {
-      await logBrowserAction("Leaving existing X browser session open");
-      await browser.close().catch(() => undefined);
-    }
-  };
-}
-
 async function profileAppearsLocked(userDataDir: string): Promise<boolean> {
   const lockFiles = ["SingletonLock", "SingletonSocket", "SingletonCookie"];
 
@@ -74,17 +67,40 @@ async function profileAppearsLocked(userDataDir: string): Promise<boolean> {
   return false;
 }
 
-export async function openXBrowser(options: { headless?: boolean } = {}): Promise<XBrowserSession> {
+function getManagedSession(): XBrowserSession | null {
+  const managedXBrowser = getManagedState();
+  if (!managedXBrowser) return null;
+
+  const page = managedXBrowser.context.pages().find((candidate) => candidate.url().includes("x.com"))
+    || managedXBrowser.context.pages()[0]
+    || managedXBrowser.page;
+
+  page.setDefaultTimeout(15_000);
+  page.setDefaultNavigationTimeout(30_000);
+
+  return {
+    context: managedXBrowser.context,
+    page,
+    close: async () => {
+      await logBrowserAction("Leaving dashboard X browser session open");
+    }
+  };
+}
+
+export async function openXBrowser(options: OpenXBrowserOptions = {}): Promise<XBrowserSession> {
   const runtimeConfig = getEffectiveConfig();
   await fs.mkdir(runtimeConfig.x.userDataDir, { recursive: true });
 
   if (!(options.headless ?? runtimeConfig.x.headless)) {
-    const existingSession = await connectToExistingXBrowser(runtimeConfig.x.cdpPort);
-    if (existingSession) return existingSession;
+    const existingSession = getManagedSession();
+    if (existingSession) {
+      await logBrowserAction("Reusing dashboard X browser session");
+      return existingSession;
+    }
 
     if (await profileAppearsLocked(runtimeConfig.x.userDataDir)) {
       throw new Error(
-        `The X Chromium profile is already open, but automation cannot connect to it on port ${runtimeConfig.x.cdpPort}. Close every Chrome for Testing/X window, click Open X browser again, then rerun the agent.`
+        "The X Chromium profile is already open outside the dashboard-managed browser. Close every Chrome for Testing/X window, click Open X browser again, then rerun the agent."
       );
     }
   }
@@ -120,6 +136,25 @@ export async function openXBrowser(options: { headless?: boolean } = {}): Promis
   const page = context.pages()[0] || (await context.newPage());
   page.setDefaultTimeout(15_000);
   page.setDefaultNavigationTimeout(30_000);
+
+  if (options.keepOpen && !(options.headless ?? runtimeConfig.x.headless)) {
+    const session: XBrowserSession = {
+      context,
+      page,
+      close: async () => {
+        await logBrowserAction("Leaving dashboard X browser session open");
+      }
+    };
+
+    setManagedState({ session, context, page });
+    context.on("close", () => {
+      if (getManagedState()?.context === context) {
+        setManagedState(null);
+      }
+    });
+
+    return session;
+  }
 
   return {
     context,

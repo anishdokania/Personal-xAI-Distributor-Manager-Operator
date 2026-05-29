@@ -16,11 +16,16 @@ async function clickFirstVisible(page: Page, selectors: string[], label: string)
 }
 
 async function fillComposer(page: Page, text: string): Promise<void> {
-  const editor = page.locator('[data-testid="tweetTextarea_0"]').last();
+  const editor = page
+    .locator('[data-testid="tweetTextarea_0"] [contenteditable="true"], [data-testid="tweetTextarea_0"][contenteditable="true"]')
+    .last();
   await editor.waitFor({ state: "visible", timeout: 15_000 });
   await logBrowserAction("Filling X composer", { characters: text.length });
   await editor.click({ force: true });
-  await page.keyboard.insertText(text);
+  await editor.fill(text).catch(async () => {
+    await editor.click({ force: true });
+    await page.keyboard.insertText(text);
+  });
   await page.waitForTimeout(500);
 
   const visibleText = (await editor.textContent().catch(() => ""))?.trim() || "";
@@ -39,7 +44,7 @@ async function submitComposer(page: Page): Promise<void> {
   }
 
   await logBrowserAction("Submitting X composer");
-  await button.click();
+  await button.click({ force: true });
   await randomDelay(2_000, 4_000);
 }
 
