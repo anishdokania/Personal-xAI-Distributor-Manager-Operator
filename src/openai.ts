@@ -11,6 +11,12 @@ export type ChatMessage = {
 
 let client: OpenAI | null = null;
 
+const mockPostIndexKey = "__personalXOperatorMockPostIndex";
+
+type XOperatorGlobal = typeof globalThis & {
+  [mockPostIndexKey]?: number;
+};
+
 function latestUserContent(messages: ChatMessage[]): string {
   return [...messages].reverse().find((message) => message.role === "user")?.content || "";
 }
@@ -24,7 +30,11 @@ function mockPost(): string {
     "The hardest part of useful AI automation is not generating text. It is deciding when doing nothing is the better action."
   ];
 
-  return posts[Math.floor(Date.now() / 1000) % posts.length];
+  const globalState = globalThis as XOperatorGlobal;
+  const nextIndex = ((globalState[mockPostIndexKey] ?? -1) + 1) % posts.length;
+  globalState[mockPostIndexKey] = nextIndex;
+
+  return posts[nextIndex];
 }
 
 function mockReply(userContent: string): string {
