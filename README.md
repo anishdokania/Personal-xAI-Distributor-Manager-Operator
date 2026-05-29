@@ -77,6 +77,7 @@ The ZIP is created in `dist/`. It uses `git archive`, so ignored local files lik
 Buyer-facing docs:
 
 - `BUYER_GUIDE.md`
+- `DEMO_SCRIPT.md`
 - `DEPLOY.md`
 - `LAUNCH.md`
 - `LICENSE.md`

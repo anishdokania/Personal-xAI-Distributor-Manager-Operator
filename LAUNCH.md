@@ -35,6 +35,7 @@ The download should include:
 - `.env.example`
 - README setup instructions
 - `BUYER_GUIDE.md`
+- `DEMO_SCRIPT.md`
 - `LICENSE.md`
 - `REFUND_POLICY.md`
 - `brain.md`, `ideas.md`, `style.md`, `forbidden.md`, `targets.md`
@@ -100,5 +101,5 @@ Boundary copy:
 
 ## Next Improvements
 
-- Add a buyer-facing demo video.
+- Record and publish the buyer-facing demo video from `DEMO_SCRIPT.md`.
 - Add an in-dashboard settings editor.
