@@ -26,21 +26,74 @@ export async function logBrowserAction(message: string, metadata?: unknown): Pro
   console.log(`[browser] ${message}`);
 }
 
+async function isCdpAvailable(port: number): Promise<boolean> {
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/json/version`, {
+      signal: AbortSignal.timeout(500)
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+async function connectToExistingXBrowser(port: number): Promise<XBrowserSession | null> {
+  if (!(await isCdpAvailable(port))) return null;
+
+  await logBrowserAction("Connecting to existing X browser session", { cdpPort: port });
+  const browser = await chromium.connectOverCDP(`http://127.0.0.1:${port}`);
+  const context = browser.contexts()[0] || (await browser.newContext());
+  const page = context.pages().find((candidate) => candidate.url().includes("x.com")) || (await context.newPage());
+
+  page.setDefaultTimeout(15_000);
+  page.setDefaultNavigationTimeout(30_000);
+
+  return {
+    context,
+    page,
+    close: async () => {
+      await logBrowserAction("Leaving existing X browser session open");
+      await browser.close().catch(() => undefined);
+    }
+  };
+}
+
 export async function openXBrowser(options: { headless?: boolean } = {}): Promise<XBrowserSession> {
   const runtimeConfig = getEffectiveConfig();
   await fs.mkdir(runtimeConfig.x.userDataDir, { recursive: true });
 
+  if (!(options.headless ?? runtimeConfig.x.headless)) {
+    const existingSession = await connectToExistingXBrowser(runtimeConfig.x.cdpPort);
+    if (existingSession) return existingSession;
+  }
+
   await logBrowserAction("Launching persistent X browser session", {
     userDataDir: runtimeConfig.x.userDataDir,
-    headless: options.headless ?? runtimeConfig.x.headless
+    headless: options.headless ?? runtimeConfig.x.headless,
+    cdpPort: runtimeConfig.x.cdpPort
   });
 
-  const context = await chromium.launchPersistentContext(runtimeConfig.x.userDataDir, {
-    headless: options.headless ?? runtimeConfig.x.headless,
-    viewport: { width: 1280, height: 900 },
-    locale: "en-US",
-    args: ["--disable-blink-features=AutomationControlled"]
-  });
+  let context: BrowserContext;
+
+  try {
+    context = await chromium.launchPersistentContext(runtimeConfig.x.userDataDir, {
+      headless: options.headless ?? runtimeConfig.x.headless,
+      viewport: { width: 1280, height: 900 },
+      locale: "en-US",
+      args: [
+        "--disable-blink-features=AutomationControlled",
+        `--remote-debugging-port=${runtimeConfig.x.cdpPort}`
+      ]
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (message.includes("Opening in existing browser session")) {
+      throw new Error(
+        `The X browser profile is already open but is not reachable on port ${runtimeConfig.x.cdpPort}. Close the existing X Chromium window, then click Open X browser again.`
+      );
+    }
+    throw error;
+  }
 
   const page = context.pages()[0] || (await context.newPage());
   page.setDefaultTimeout(15_000);

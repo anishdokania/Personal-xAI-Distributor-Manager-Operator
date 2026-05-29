@@ -48,6 +48,7 @@ export type OperatorConfig = {
   x: {
     userDataDir: string;
     headless: boolean;
+    cdpPort: number;
   };
   scheduler: {
     replyIntervalMinutes: number;
@@ -85,7 +86,8 @@ export const config: OperatorConfig = {
   databasePath: resolveFromRoot(process.env.DATABASE_PATH || "./data/operator.sqlite"),
   x: {
     userDataDir: resolveFromRoot(process.env.X_USER_DATA_DIR || "./data/x-session"),
-    headless: booleanFromEnv("X_HEADLESS", false)
+    headless: booleanFromEnv("X_HEADLESS", false),
+    cdpPort: numberFromEnv("X_CDP_PORT", 9222)
   },
   scheduler: {
     replyIntervalMinutes: numberFromEnv("SCHEDULER_REPLY_INTERVAL_MINUTES", 180),

@@ -49,6 +49,8 @@ The default safety posture is conservative:
 - `REPLIES_PER_DAY=5`
 - `MIN_REPLY_SCORE=8`
 
+The dashboard-launched X browser exposes a local debugging port (`X_CDP_PORT=9222`) so agents can reuse the visible browser instead of colliding with its profile lock.
+
 ## Local Files To Edit
 
 - `brain.md`: account identity and worldview

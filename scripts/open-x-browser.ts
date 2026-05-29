@@ -6,6 +6,7 @@ import { recordAction, recordError } from "../src/db";
 const executablePath = chromium.executablePath();
 const args = [
   `--user-data-dir=${config.x.userDataDir}`,
+  `--remote-debugging-port=${config.x.cdpPort}`,
   "--new-window",
   "--no-first-run",
   "--no-default-browser-check",
@@ -24,6 +25,7 @@ try {
   recordAction("xBrowser", "opened", "Opened X browser window", {
     executablePath,
     userDataDir: config.x.userDataDir,
+    cdpPort: config.x.cdpPort,
     url: "https://x.com/home"
   });
 
