@@ -1,0 +1,12 @@
+node_modules
+.next
+dist
+.env
+.tools
+tsconfig.tsbuildinfo
+data/*.sqlite
+data/*.sqlite-*
+data/x-session
+playwright-report
+test-results
+.DS_Store

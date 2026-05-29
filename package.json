@@ -1,0 +1,33 @@
+{
+  "name": "personal-x-ai-operator",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "db:init": "tsx scripts/init-db.ts",
+    "x:login": "tsx scripts/login-x.ts",
+    "agent:post": "tsx scripts/run-post-agent.ts",
+    "agent:reply": "tsx scripts/run-reply-agent.ts",
+    "scheduler": "tsx src/scheduler.ts"
+  },
+  "dependencies": {
+    "dotenv": "^16.5.0",
+    "next": "^15.3.0",
+    "openai": "^4.103.0",
+    "playwright": "^1.52.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@next/swc-wasm-nodejs": "15.5.18",
+    "@types/node": "^22.15.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3"
+  }
+}

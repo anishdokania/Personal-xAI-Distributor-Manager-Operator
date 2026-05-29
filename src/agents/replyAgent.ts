@@ -1,0 +1,233 @@
+import {
+  getEffectiveConfig,
+  insertReply,
+  markReplyFailed,
+  markReplySent,
+  recordAction,
+  recordError,
+  repliesSentToday,
+  repliesToHandleSince,
+  replyTextExists
+} from "../db";
+import { generateText } from "../openai";
+import { readOperatorMemory } from "../localFiles";
+import { publishReplyToPost } from "../x/post";
+import { scanForYouFeed, type ScannedFeedItem } from "../x/feed";
+import { scoreFeedItem } from "./scoreAgent";
+
+export type ReplyAgentResult = {
+  scanned: number;
+  scored: number;
+  drafted: number;
+  sent: number;
+  skipped: number;
+  failed: number;
+};
+
+function todayStartIso(): string {
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  return start.toISOString();
+}
+
+function cleanReply(text: string): string {
+  return text
+    .replace(/^["'\u201c\u201d]+|["'\u201c\u201d]+$/g, "")
+    .replace(/^reply:\s*/i, "")
+    .trim();
+}
+
+async function generateReply(item: ScannedFeedItem, scoreReason: string): Promise<string> {
+  const memory = await readOperatorMemory();
+  const runtimeConfig = getEffectiveConfig();
+
+  const reply = await generateText(
+    [
+      {
+        role: "system",
+        content:
+          "You write concise, natural X replies for a personal account. Avoid spam, generic praise, mass-tagging, CTAs, and product promotion."
+      },
+      {
+        role: "user",
+        content: `
+Account brain:
+${memory.brain}
+
+Style:
+${memory.style}
+
+Forbidden:
+${memory.forbidden}
+
+Configured tone:
+${runtimeConfig.toneStyle}
+
+Original post:
+${item.text}
+
+Author: ${item.author} (${item.handle})
+Why this scored well:
+${scoreReason}
+
+Write one reply under 240 characters.
+Make it sound like a real person adding a useful thought.
+Do not include hashtags unless clearly useful.
+Do not ask people to follow, DM, click, or check anything out.
+Do not mention that you are an AI.
+Return only the reply text.
+        `.trim()
+      }
+    ],
+    { temperature: 0.75, maxTokens: 120 }
+  );
+
+  return cleanReply(reply);
+}
+
+export async function runReplyAgent(): Promise<ReplyAgentResult> {
+  const runtimeConfig = getEffectiveConfig();
+  const result: ReplyAgentResult = {
+    scanned: 0,
+    scored: 0,
+    drafted: 0,
+    sent: 0,
+    skipped: 0,
+    failed: 0
+  };
+
+  recordAction("replyAgent", "started", "Reply agent started", {
+    autoReplyEnabled: runtimeConfig.autoReplyEnabled,
+    minReplyScore: runtimeConfig.minReplyScore
+  });
+
+  try {
+    const remainingAtStart = Math.max(0, runtimeConfig.repliesPerDay - repliesSentToday());
+    let remaining = remainingAtStart;
+    const items = await scanForYouFeed(runtimeConfig.maxFeedPostsToScan);
+    result.scanned = items.length;
+
+    for (const item of items) {
+      const score = await scoreFeedItem(item);
+      result.scored += 1;
+
+      if (score.score < runtimeConfig.minReplyScore) {
+        insertReply({
+          feedItemId: item.dbId,
+          author: item.author,
+          handle: item.handle,
+          postText: item.text,
+          score: score.score,
+          status: "skipped",
+          error: score.reason
+        });
+        result.skipped += 1;
+        continue;
+      }
+
+      if (remaining <= 0) {
+        insertReply({
+          feedItemId: item.dbId,
+          author: item.author,
+          handle: item.handle,
+          postText: item.text,
+          score: score.score,
+          status: "skipped",
+          error: "Daily reply limit reached."
+        });
+        result.skipped += 1;
+        continue;
+      }
+
+      if (!item.url) {
+        insertReply({
+          feedItemId: item.dbId,
+          author: item.author,
+          handle: item.handle,
+          postText: item.text,
+          score: score.score,
+          status: "skipped",
+          error: "No stable X post URL found."
+        });
+        result.skipped += 1;
+        continue;
+      }
+
+      if (repliesToHandleSince(item.handle, todayStartIso()) >= 2) {
+        insertReply({
+          feedItemId: item.dbId,
+          author: item.author,
+          handle: item.handle,
+          postText: item.text,
+          score: score.score,
+          status: "skipped",
+          error: "Per-author daily reply limit reached."
+        });
+        result.skipped += 1;
+        continue;
+      }
+
+      const replyText = await generateReply(item, score.reason);
+
+      if (replyTextExists(replyText)) {
+        insertReply({
+          feedItemId: item.dbId,
+          author: item.author,
+          handle: item.handle,
+          postText: item.text,
+          replyText,
+          score: score.score,
+          status: "skipped",
+          error: "Duplicate reply text."
+        });
+        result.skipped += 1;
+        continue;
+      }
+
+      if (!runtimeConfig.autoReplyEnabled) {
+        insertReply({
+          feedItemId: item.dbId,
+          author: item.author,
+          handle: item.handle,
+          postText: item.text,
+          replyText,
+          score: score.score,
+          status: "draft"
+        });
+        result.drafted += 1;
+        remaining -= 1;
+        continue;
+      }
+
+      const replyId = insertReply({
+        feedItemId: item.dbId,
+        author: item.author,
+        handle: item.handle,
+        postText: item.text,
+        replyText,
+        score: score.score,
+        status: "pending"
+      });
+
+      try {
+        const publishResult = await publishReplyToPost(item.url, replyText);
+        markReplySent(replyId, publishResult.url);
+        result.sent += 1;
+        remaining -= 1;
+      } catch (error) {
+        markReplyFailed(replyId, error);
+        recordError("runReplyAgent.publish", error);
+        result.failed += 1;
+      }
+    }
+
+    recordAction("replyAgent", "completed", "Reply agent completed", result);
+    return result;
+  } catch (error) {
+    recordError("runReplyAgent", error);
+    recordAction("replyAgent", "failed", "Reply agent failed", {
+      error: error instanceof Error ? error.message : String(error)
+    });
+    throw error;
+  }
+}
