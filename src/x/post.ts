@@ -19,14 +19,25 @@ async function fillComposer(page: Page, text: string): Promise<void> {
   const editor = page.locator('[data-testid="tweetTextarea_0"]').last();
   await editor.waitFor({ state: "visible", timeout: 15_000 });
   await logBrowserAction("Filling X composer", { characters: text.length });
-  await editor.click();
+  await editor.click({ force: true });
   await page.keyboard.insertText(text);
+  await page.waitForTimeout(500);
+
+  const visibleText = (await editor.textContent().catch(() => ""))?.trim() || "";
+  if (!visibleText.includes(text.slice(0, Math.min(20, text.length)))) {
+    throw new Error("X composer did not accept inserted text. Close any existing composer/draft modal and try again.");
+  }
+
   await randomDelay();
 }
 
 async function submitComposer(page: Page): Promise<void> {
   const button = page.locator('[data-testid="tweetButton"], [data-testid="tweetButtonInline"]').last();
   await button.waitFor({ state: "visible", timeout: 15_000 });
+  if (!(await button.isEnabled().catch(() => false))) {
+    throw new Error("X Post button is disabled because the composer has no accepted text.");
+  }
+
   await logBrowserAction("Submitting X composer");
   await button.click();
   await randomDelay(2_000, 4_000);
