@@ -347,13 +347,18 @@ function specificLocalReply(originalPost: string, lower: string, seed: number): 
   if (isPriorityConnectionPost(lower)) {
     return pick(
       [
-        "This is exactly the circle I’m trying to spend more time in. I’m building around AI operators, browser automation, and practical distribution workflows.",
-        "Definitely my lane. I’m working on personal AI operators that help builders show up consistently without turning distribution into spam.",
-        "Same orbit here: startups, coding, AI agents, and building in public. I’m especially interested in tools that make daily workflows more consistent.",
-        "I’m in. I’m building a local X operator right now: scan useful conversations, reply selectively, keep logs, and make distribution feel less random.",
-        "This is the builder corner I’m looking for too. I’m focused on AI automation, distribution loops, and small tools that create real leverage.",
-        "Relevant to me. I’m building in the AI automation lane and trying to connect with people who care about shipping, distribution, and useful tools.",
-        "Count me in. I’m working on local AI operators and the unsexy parts that make them useful: limits, logs, review, and consistent distribution."
+        "This is exactly the circle I’m trying to spend more time in. I’m building around AI operators, browser automation, and practical distribution workflows.\n\nLet’s #connect.",
+        "Definitely my lane. I’m working on personal AI operators that help builders show up consistently without turning distribution into spam.\n\nWould love to #connect.",
+        "Same orbit here: startups, coding, AI agents, and building in public. I’m especially interested in tools that make daily workflows more consistent.\n\nLet’s #connect.",
+        "I’m in. I’m building a local X operator right now: scan useful conversations, reply selectively, keep logs, and make distribution feel less random.\n\nLet’s #connect.",
+        "This is the builder corner I’m looking for too. I’m focused on AI automation, distribution loops, and small tools that create real leverage.\n\nWould be great to #connect.",
+        "Relevant to me. I’m building in the AI automation lane and trying to meet people who care about shipping, distribution, and useful tools.\n\nLet’s #connect.",
+        "Count me in. I’m working on local AI operators and the unsexy parts that make them useful: limits, logs, review, and consistent distribution.\n\nLet’s #connect.",
+        "I’m building right in this lane: AI automation, X distribution, and small operator loops that help builders meet the right people.\n\nLet’s #connect.",
+        "This is the exact kind of network I’m trying to build: builders who care about AI, shipping, distribution, and practical software.\n\nWould love to #connect.",
+        "I’m experimenting with using a local AI operator to find the right builder conversations and show up consistently.\n\nLet’s #connect.",
+        "I’m in the same world: AI tools, SaaS experiments, dev workflows, and distribution systems that compound over time.\n\nLet’s #connect.",
+        "This is my corner of X too. I’m building tools around AI operators, automation, and intentional distribution for builders.\n\nWould be great to #connect."
       ],
       seed + originalPost.length
     );
