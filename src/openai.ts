@@ -1,6 +1,15 @@
 import OpenAI from "openai";
 import { config } from "./config";
-import { getEffectiveConfig, recentPosts } from "./db";
+import {
+  feedItemsScannedToday,
+  getDb,
+  getEffectiveConfig,
+  postsSentToday,
+  recentActions,
+  recentFeedItems,
+  recentPosts,
+  repliesSentToday
+} from "./db";
 
 type ChatRole = "system" | "user" | "assistant";
 
@@ -77,6 +86,10 @@ function trimReply(text: string, maxLength = 230): string {
 
   const trimmed = text.slice(0, maxLength).replace(/\s+\S*$/, "").replace(/[.,;:!?-]+$/, "");
   return `${trimmed}.`;
+}
+
+function capitalizeFirst(text: string): string {
+  return text.length > 0 ? `${text[0].toUpperCase()}${text.slice(1)}` : text;
 }
 
 type LocalReplyTopic =
@@ -438,107 +451,100 @@ function specificLocalReply(originalPost: string, lower: string, seed: number): 
 }
 
 function mockPost(): string {
-  const curatedPosts = [
-    "Lab journal: today’s operator loop is getting more real. One reply every 15 minutes, one post every 30, local logs, and enough friction to keep it accountable.",
-    "Lab journal: I’m tuning this X operator to behave less like a content cannon and more like a steady builder habit with memory, limits, and a visible trail.",
-    "Lab journal: the current experiment is simple: scan the feed, pick one useful conversation, reply naturally, then write a small update about what changed.",
-    "Lab journal: I keep learning that automation gets more useful when the defaults are boring. Small batches, clear logs, visible settings, easy pause.",
-    "Lab journal: distribution is starting to look like a workflow problem. Show up consistently, join relevant conversations, keep the loop inspectable.",
-    "Lab journal: today’s build is about variable replies. The agent should not sound like it has one template wearing different clothes.",
-    "Lab journal: the useful part of this operator is not just posting. It is knowing what it scanned, why it acted, and what it skipped.",
-    "Lab journal: I’m trying to make this feel like a personal distribution assistant, not a spam machine. Fewer actions, better context, cleaner receipts.",
-    "I’m building a local AI operator for X: scan the feed, score useful conversations, draft replies, send selectively, and keep a local audit trail. Simple, inspectable, personal.",
-    "Looking to connect with builders who care about practical AI agents, browser automation, and tools that create distribution without turning into spam.",
-    "The product I keep wanting is a personal operator that helps me show up consistently online while still leaving a clear trail of every action it took.",
-    "I’m spending more time on small AI workflows that create real leverage: fewer repeated tabs, better follow-up, cleaner logs, and more intentional distribution.",
-    "If you’re building in AI agents, local-first tools, browser automation, or creator/distribution workflows, I’d genuinely like to compare notes.",
-    "The useful version of a personal AI operator is not flashy. It watches a small workflow, keeps a local trail, and stops cleanly when you ask it to.",
-    "I keep coming back to this: automation needs an off switch as much as it needs a clever model.",
-    "A good personal agent should feel inspectable. You should know what it saw, what it decided, and what it did before you trust it with more.",
-    "Local-first automation makes experimentation calmer. Break something, inspect the logs, reset the state, try again.",
-    "The hardest part of useful AI automation is not generating text. It is deciding when doing nothing is the better action.",
-    "A tiny agent that handles one boring workflow reliably is more useful than a big agent that surprises you twice a day.",
-    "The best automation logs feel like a receipt. Clear inputs, clear decisions, clear actions, no mystery theater.",
-    "I trust automation faster when it admits uncertainty and leaves the final switch easy to reach.",
-    "A personal operator should earn autonomy in layers: draft first, suggest next, act only after the boring parts are proven.",
-    "The most underrated agent feature is a pause button that actually pauses everything.",
-    "Good AI tooling should make the user feel more aware of the system, not less responsible for it.",
-    "A practical agent needs memory, but it also needs boundaries. Remember the work, forget the noise.",
-    "I like automation that starts narrow enough to debug with a cup of coffee and a log file.",
-    "The local-first version of an agent feels less magical, which is exactly why it is easier to trust.",
-    "If an agent cannot explain why it acted, it should probably stay in draft mode.",
-    "Small workflows are where agents get interesting. Scheduling, scanning, sorting, drafting, nudging.",
-    "A useful operator is less like a genius assistant and more like a patient process that does not lose context.",
-    "The goal is not to remove the human. The goal is to remove the repetitive tab-opening tax.",
-    "I want agents that ask for less attention without asking for blind trust.",
-    "A good automation system should make failure boring: logged, recoverable, and obvious.",
-    "The first version of any agent should be embarrassingly inspectable.",
-    "There is a quiet kind of leverage in tools that just remember what happened yesterday.",
-    "The best personal AI products may look unimpressive at first because they are busy being accountable.",
-    "Autonomy without observability is just suspense wearing a productivity hat.",
-    "A personal AI workflow becomes useful when you can see the whole loop: context, decision, action, result.",
-    "The safest agent is often the one that knows when to stop and leave a draft.",
-    "I would rather have an agent do three things transparently than thirty things mysteriously.",
-    "Local data changes the feel of automation. It becomes a workspace you can inspect, not a service you hope behaved.",
-    "The boring parts of agent design are the product: limits, logs, retries, settings, and review states.",
-    "The best AI operator is not always the most autonomous one. Sometimes it is the one with the clearest handoff.",
-    "Useful automation starts by respecting friction. Some friction is waste, some is judgment.",
-    "I keep noticing that the agents people actually use are the ones that fit into existing routines quietly.",
-    "A good personal agent should be easy to interrupt, easy to audit, and hard to accidentally unleash.",
-    "The magic is not the model call. The magic is the loop around it: memory, policy, browser state, and a clean record.",
-    "Every agent should have a paper trail before it gets a longer leash.",
-    "The more an automation touches a real account, the more boring its defaults should be.",
-    "Agent design gets better when you treat doing nothing as a valid output.",
-    "The real test for an operator is not whether it can act. It is whether it can act with restraint.",
-    "A clean dashboard with honest status beats a clever system that hides the messy parts.",
-    "The best personal automation feels like a second pair of hands, not a second personality.",
-    "I am more interested in agents that reduce daily drag than agents that perform intelligence.",
-    "The future I want is full of small local operators quietly handling chores I used to reopen tabs for.",
-    "A reliable agent is allowed to be boring. In fact, that might be the point.",
-    "Before giving an agent more power, I want to see how it behaves when the answer is no."
-  ];
-
   const globalState = globalThis as XOperatorGlobal;
   const nextIndex = (globalState[mockPostIndexKey] ?? -1) + 1;
   globalState[mockPostIndexKey] = nextIndex;
+  const seed = nextIndex + Date.now();
+  const runtimeConfig = getEffectiveConfig();
+  const scannedToday = feedItemsScannedToday();
+  const repliesToday = repliesSentToday();
+  const postsToday = postsSentToday();
+  const replyStats = getDb()
+    .prepare("SELECT status, COUNT(*) AS count FROM replies GROUP BY status")
+    .all() as { status: string; count: number }[];
+  const sentTotal = replyStats.find((row) => row.status === "sent")?.count ?? 0;
+  const skippedTotal = replyStats.find((row) => row.status === "skipped")?.count ?? 0;
+  const priorityRows = getDb()
+    .prepare(
+      `
+      SELECT post_text, reply_text, author, handle
+      FROM replies
+      WHERE status = 'sent'
+        AND reply_text LIKE '%#connect%'
+      ORDER BY replied_at DESC
+      LIMIT 4
+    `
+    )
+    .all() as { post_text: string | null; reply_text: string | null; author: string | null; handle: string | null }[];
+  const recentFeed = recentFeedItems(20);
+  const recentFeedText = recentFeed.map((item) => item.text.toLowerCase()).join(" ");
+  const connectionSignals = recentFeed.filter((item) => isPriorityConnectionPost(item.text)).length;
+  const recentActionsText = recentActions(8).map((action) => `${action.type}:${action.status}`).join(", ");
+  const latestConnection = priorityRows[0];
+  const latestAnchor = latestConnection?.post_text ? extractAnchor(latestConnection.post_text) : "";
   const usedPosts = new Set(recentPosts(200).map((post) => post.content.trim().toLowerCase()));
+  const cadence =
+    runtimeConfig.scheduler.postIntervalMinutes > 0
+      ? `posting every ${runtimeConfig.scheduler.postIntervalMinutes} minutes`
+      : "posting on a fixed schedule";
+  const replyCadence =
+    runtimeConfig.scheduler.replyIntervalMinutes > 0
+      ? `${runtimeConfig.scheduler.repliesPerRun} replies every ${runtimeConfig.scheduler.replyIntervalMinutes} minutes`
+      : "manual reply runs";
+  const dominantTopic = includesAny(recentFeedText, ["saas", "startup", "founder"])
+    ? "SaaS/startup builders"
+    : includesAny(recentFeedText, ["devops", "cloud", "developer", "coding"])
+      ? "developer/building posts"
+      : includesAny(recentFeedText, ["ai", "agent", "automation"])
+        ? "AI and automation builders"
+        : "builder conversations";
 
-  for (let offset = 0; offset < curatedPosts.length; offset += 1) {
-    const candidate = curatedPosts[(nextIndex + offset) % curatedPosts.length];
+  const hooks = [
+    "Lab journal:",
+    "Build note:",
+    "Current experiment:",
+    "Operator log:",
+    "Distribution note:"
+  ];
+  const metrics = [
+    `today the operator scanned ${scannedToday} posts, sent ${repliesToday} replies, and published ${postsToday} updates`,
+    `the local trail now has ${sentTotal} sent replies and ${skippedTotal} decisions to skip`,
+    `the loop is running at ${replyCadence}, with ${cadence}`,
+    `the latest scan found ${connectionSignals} priority connection signals around ${dominantTopic}`,
+    latestAnchor
+      ? `the last useful connection signal was around "${latestAnchor}"`
+      : `the latest dashboard trail shows ${recentActionsText || "a quiet system"}`
+  ];
+  const lessons = [
+    "Distribution feels more like a system when every action leaves a receipt",
+    "The hard part is not replying more, it is replying where there is real context",
+    "Growth gets less mysterious when scanning, scoring, posting, and skipping are visible",
+    "Automation becomes easier to trust when the defaults are small and inspectable",
+    "The useful constraint is simple: meet builders without turning into noise",
+    "The dashboard matters because it shows what the agent did and what it refused to do"
+  ];
+  const closers = [
+    "Small loops, clear logs, better conversations.",
+    "Trying to make consistency feel less random.",
+    "This is the kind of distribution experiment I can actually inspect.",
+    "The goal is more relevant conversations, not louder posting.",
+    "Still tuning the line between useful automation and too much autonomy."
+  ];
+  const metric = pick(metrics, seed * 3);
+  const formats = [
+    `${pick(hooks, seed)} ${capitalizeFirst(metric)}.\n\n${pick(lessons, seed * 5)}.`,
+    `${pick(hooks, seed)} ${pick(lessons, seed * 7)}.\n\nToday: ${pick(metrics, seed * 11)}.`,
+    `${pick(hooks, seed)} ${capitalizeFirst(pick(metrics, seed * 13))}.\n\n${pick(closers, seed * 17)}`,
+    `${pick(hooks, seed)} I am treating X growth like a local workflow: scan, score, reply, log, review.\n\n${capitalizeFirst(pick(metrics, seed * 19))}.`,
+    `${pick(hooks, seed)} ${dominantTopic} keep showing up in the feed.\n\n${pick(lessons, seed * 23)}.`
+  ].map((format) => format.replace("Today: today", "Today"));
+
+  for (let offset = 0; offset < formats.length; offset += 1) {
+    const candidate = trimReply(formats[(nextIndex + offset) % formats.length], 270);
     if (!usedPosts.has(candidate.toLowerCase())) return candidate;
   }
 
-  const subjects = [
-    "personal AI operators",
-    "local-first automation",
-    "browser agents",
-    "small workflow tools",
-    "agent dashboards",
-    "AI-assisted routines",
-    "local memory",
-    "browser automation"
-  ];
-  const observations = [
-    "work best when the loop is visible",
-    "get safer when every action leaves a trail",
-    "become useful when they remove one repeated decision",
-    "need boring controls more than clever demos",
-    "should start with drafts before they earn autonomy",
-    "are easier to trust when failure is easy to inspect",
-    "feel better when the human can interrupt at any point",
-    "should make context easier to carry, not harder to audit"
-  ];
-  const endings = [
-    "That is the difference between automation and surprise.",
-    "Small, observable wins compound faster than giant leaps.",
-    "I would rather debug a simple loop than admire a mysterious one.",
-    "The quiet details are usually the product.",
-    "The goal is less tab-opening, not less judgment.",
-    "That is where trust starts to become practical."
-  ];
-  const seed = Math.max(0, nextIndex - curatedPosts.length + usedPosts.size);
-
-  return `${pick(subjects, seed)} ${pick(observations, seed * 3)}. ${pick(endings, seed * 7)}`;
+  return trimReply(`${pick(hooks, seed)} ${pick(metrics, seed * 29)}. ${pick(lessons, seed * 31)}.`, 270);
 }
 
 function mockReply(userContent: string): string {
