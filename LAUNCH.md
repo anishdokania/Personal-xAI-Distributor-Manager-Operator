@@ -21,11 +21,15 @@ Use a hosted checkout instead of building billing into the app.
 Recommended path:
 
 1. Create a $20 product in Stripe Payment Links, Gumroad, Lemon Squeezy, or Polar.
-2. Upload a ZIP release or add post-purchase instructions in that provider.
+2. Upload `dist/personal-x-operator-v0.1.0.zip` as the post-purchase download.
 3. Copy the checkout URL.
 4. Set `NEXT_PUBLIC_PURCHASE_URL` in `.env`.
 5. Set `MARKETING_ONLY=true` on the public deployment.
 6. Deploy the landing page.
+
+The checkout page should say:
+
+> After purchase, download the ZIP, unzip it, open a terminal in the folder, and follow `BUYER_GUIDE.md`.
 
 ## Delivery
 

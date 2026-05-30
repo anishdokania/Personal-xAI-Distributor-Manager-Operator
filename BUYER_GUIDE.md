@@ -2,6 +2,14 @@
 
 Personal X Operator is a local-first X engagement assistant. It runs on your machine, uses your own browser session, and stores history in a local SQLite database.
 
+## Fastest Path
+
+1. Download and unzip the product.
+2. Open a terminal in the unzipped folder.
+3. Run the install commands below.
+4. Log into X once.
+5. Start with draft mode.
+
 ## What You Need
 
 - Node.js 24 or newer
@@ -31,6 +39,8 @@ Open:
 http://localhost:3000/dashboard
 ```
 
+Leave that terminal window running while you use the dashboard.
+
 ## Log Into X
 
 Run:
@@ -59,6 +69,15 @@ Then in the dashboard:
 4. Review the dashboard history.
 
 Nothing posts live until you enable live posting or live replies.
+
+## Daily Use
+
+1. Start the app with `npm run dev`.
+2. Open `http://localhost:3000/dashboard`.
+3. Click **Open X browser**.
+4. Click **Scan and draft replies**.
+5. Review drafts and logs.
+6. Enable live mode only when you are comfortable with the output.
 
 ## Live Mode
 

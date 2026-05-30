@@ -48,6 +48,11 @@ export default function HomePage() {
               A simple desktop-style tool that scans your X feed, finds relevant posts,
               drafts thoughtful replies, and can post from your own browser when you enable it.
             </p>
+            <div className="quick-steps" aria-label="Purchase flow">
+              <span>Buy</span>
+              <span>Download</span>
+              <span>Run locally</span>
+            </div>
             <div className="landing-actions">
               {purchaseUrl ? (
                 <a className="button-link primary" href={purchaseUrl}>
@@ -95,22 +100,38 @@ export default function HomePage() {
 
       <section className="landing-section two-col" id="launch">
         <div>
-          <p className="eyebrow">Self-serve launch path</p>
-          <h2>Use a payment link instead of building billing.</h2>
+          <p className="eyebrow">Simple customer flow</p>
+          <h2>Buy once, download the ZIP, open the local dashboard.</h2>
           <p className="section-copy">
-            Put a Stripe Payment Link, Gumroad product URL, Lemon Squeezy checkout, or Polar checkout
-            into <code>NEXT_PUBLIC_PURCHASE_URL</code>. The checkout provider handles payment and file
-            delivery, while this app stays simple.
+            The purchase button points to <code>NEXT_PUBLIC_PURCHASE_URL</code>. Use Stripe Payment Links,
+            Gumroad, Lemon Squeezy, or Polar to collect the {price} payment and deliver the release ZIP.
           </p>
         </div>
         <div className="launch-list">
-          <p>Recommended buyer flow:</p>
+          <p>What the customer does:</p>
           <ol>
-            <li>Buyer clicks the {price} purchase button.</li>
-            <li>Payment provider delivers a ZIP or private repo invite.</li>
-            <li>Buyer follows the README to run the local app.</li>
-            <li>Buyer uses draft mode first, then enables live mode if they choose.</li>
+            <li>Click Buy once for {price}.</li>
+            <li>Download the ZIP from the payment receipt.</li>
+            <li>Run the setup commands from the buyer guide.</li>
+            <li>Log into X once and start in draft mode.</li>
           </ol>
+        </div>
+      </section>
+
+      <section className="landing-band">
+        <div className="landing-section">
+          <div>
+            <p className="eyebrow">Buyer quickstart</p>
+            <h2>Four commands after download.</h2>
+          </div>
+          <pre className="code-panel"><code>{`npm install
+cp .env.example .env
+npm run setup
+npm run dev`}</code></pre>
+          <p className="section-copy">
+            Then open <code>http://localhost:3000/dashboard</code>, click <strong>Open X browser</strong>,
+            and log into X. The first run stays in draft mode.
+          </p>
         </div>
       </section>
 
@@ -144,6 +165,24 @@ export default function HomePage() {
             <li>Deployment guide</li>
             <li>License and refund policy drafts</li>
           </ol>
+        </div>
+      </section>
+
+      <section className="landing-band">
+        <div className="landing-section final-cta">
+          <div>
+            <p className="eyebrow">Ready when your checkout link is set</p>
+            <h2>{price} once. Run it locally.</h2>
+          </div>
+          {purchaseUrl ? (
+            <a className="button-link primary" href={purchaseUrl}>
+              Buy once for {price}
+            </a>
+          ) : (
+            <a className="button-link primary" href="#launch">
+              Add checkout link
+            </a>
+          )}
         </div>
       </section>
     </main>

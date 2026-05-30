@@ -323,6 +323,23 @@ main.landing {
   margin-top: 30px;
 }
 
+.quick-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 22px;
+}
+
+.quick-steps span {
+  background: #101720;
+  border: 1px solid #33445a;
+  border-radius: 999px;
+  color: #d8e4f2;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 8px 12px;
+}
+
 .button-link {
   align-items: center;
   border: 1px solid #46596f;
@@ -522,8 +539,27 @@ main.landing {
   margin-top: 10px;
 }
 
+.code-panel {
+  background: #070b10;
+  border: 1px solid #2a3a4e;
+  border-radius: 8px;
+  color: #dbeafe;
+  font-size: 16px;
+  line-height: 1.7;
+  margin: 24px 0 0;
+  overflow-x: auto;
+  padding: 18px;
+}
+
 .compact {
   max-width: 960px;
+}
+
+.final-cta {
+  align-items: center;
+  display: flex;
+  gap: 18px;
+  justify-content: space-between;
 }
 
 @media (max-width: 860px) {
@@ -558,5 +594,10 @@ main.landing {
 
   .preview-grid {
     grid-template-columns: 1fr;
+  }
+
+  .final-cta {
+    align-items: stretch;
+    flex-direction: column;
   }
 }
