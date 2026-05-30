@@ -105,6 +105,17 @@ h2 {
   color: var(--muted);
 }
 
+.inline-link {
+  color: var(--accent);
+  font-weight: 650;
+  margin-left: 8px;
+  text-decoration: none;
+}
+
+.inline-link:hover {
+  color: #7dd3fc;
+}
+
 .grid {
   display: grid;
   gap: 14px;

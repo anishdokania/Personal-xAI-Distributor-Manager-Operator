@@ -29,7 +29,9 @@ export default function DashboardPage() {
       <div className="topbar">
         <div>
           <h1>Personal X AI Operator</h1>
-          <p className="muted">Local dashboard</p>
+          <p className="muted">
+            Local dashboard <a className="inline-link" href="/">Sales page</a>
+          </p>
         </div>
         <DashboardControls
           autoPostEnabled={data.settings.autoPostEnabled}
