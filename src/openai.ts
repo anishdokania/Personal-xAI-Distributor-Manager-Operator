@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 import { config } from "./config";
-import { getEffectiveConfig } from "./db";
+import { getEffectiveConfig, recentPosts } from "./db";
 
 type ChatRole = "system" | "user" | "assistant";
 
@@ -437,8 +437,12 @@ function mockPost(): string {
   const globalState = globalThis as XOperatorGlobal;
   const nextIndex = (globalState[mockPostIndexKey] ?? -1) + 1;
   globalState[mockPostIndexKey] = nextIndex;
+  const usedPosts = new Set(recentPosts(200).map((post) => post.content.trim().toLowerCase()));
 
-  if (nextIndex < curatedPosts.length) return curatedPosts[nextIndex];
+  for (let offset = 0; offset < curatedPosts.length; offset += 1) {
+    const candidate = curatedPosts[(nextIndex + offset) % curatedPosts.length];
+    if (!usedPosts.has(candidate.toLowerCase())) return candidate;
+  }
 
   const subjects = [
     "personal AI operators",
@@ -468,7 +472,7 @@ function mockPost(): string {
     "The goal is less tab-opening, not less judgment.",
     "That is where trust starts to become practical."
   ];
-  const seed = nextIndex - curatedPosts.length;
+  const seed = Math.max(0, nextIndex - curatedPosts.length + usedPosts.size);
 
   return `${pick(subjects, seed)} ${pick(observations, seed * 3)}. ${pick(endings, seed * 7)}`;
 }
