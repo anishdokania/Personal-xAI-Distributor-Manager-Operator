@@ -24,6 +24,10 @@ export type ReplyAgentResult = {
   failed: number;
 };
 
+export type ReplyAgentOptions = {
+  maxReplies?: number;
+};
+
 function todayStartIso(): string {
   const start = new Date();
   start.setHours(0, 0, 0, 0);
@@ -85,7 +89,7 @@ Return only the reply text.
   return cleanReply(reply);
 }
 
-export async function runReplyAgent(): Promise<ReplyAgentResult> {
+export async function runReplyAgent(options: ReplyAgentOptions = {}): Promise<ReplyAgentResult> {
   const runtimeConfig = getEffectiveConfig();
   const result: ReplyAgentResult = {
     scanned: 0,
@@ -102,7 +106,9 @@ export async function runReplyAgent(): Promise<ReplyAgentResult> {
   });
 
   try {
-    const remainingAtStart = Math.max(0, runtimeConfig.repliesPerDay - repliesSentToday());
+    const dailyRemaining = Math.max(0, runtimeConfig.repliesPerDay - repliesSentToday());
+    const remainingAtStart =
+      typeof options.maxReplies === "number" ? Math.min(dailyRemaining, options.maxReplies) : dailyRemaining;
     let remaining = remainingAtStart;
     const items = await scanForYouFeed(runtimeConfig.maxFeedPostsToScan);
     result.scanned = items.length;

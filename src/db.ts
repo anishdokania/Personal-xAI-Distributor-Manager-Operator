@@ -490,7 +490,16 @@ export function getEffectiveConfig(): OperatorConfig {
     topics: listSetting("topics", config.topics),
     forbiddenTopics: listSetting("forbidden_topics", config.forbiddenTopics),
     toneStyle: getSetting("tone_style") || config.toneStyle,
-    mockAiEnabled: booleanSetting("mock_ai", config.mockAiEnabled)
+    mockAiEnabled: booleanSetting("mock_ai", config.mockAiEnabled),
+    scheduler: {
+      ...config.scheduler,
+      replyIntervalMinutes: numberSetting(
+        "scheduler_reply_interval_minutes",
+        config.scheduler.replyIntervalMinutes
+      ),
+      jitterMinutes: numberSetting("scheduler_jitter_minutes", config.scheduler.jitterMinutes),
+      repliesPerRun: numberSetting("scheduler_replies_per_run", config.scheduler.repliesPerRun)
+    }
   };
 }
 

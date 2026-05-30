@@ -53,6 +53,7 @@ export type OperatorConfig = {
   scheduler: {
     replyIntervalMinutes: number;
     jitterMinutes: number;
+    repliesPerRun: number;
   };
 };
 
@@ -91,6 +92,7 @@ export const config: OperatorConfig = {
   },
   scheduler: {
     replyIntervalMinutes: numberFromEnv("SCHEDULER_REPLY_INTERVAL_MINUTES", 180),
-    jitterMinutes: numberFromEnv("SCHEDULER_JITTER_MINUTES", 10)
+    jitterMinutes: numberFromEnv("SCHEDULER_JITTER_MINUTES", 10),
+    repliesPerRun: numberFromEnv("SCHEDULER_REPLIES_PER_RUN", 1)
   }
 };

@@ -58,7 +58,9 @@ async function schedulerTick(): Promise<void> {
   if (runtimeConfig.autoReplyEnabled && replyDue && !replyInProgress) {
     lastReplyRunAt = Date.now();
     replyInProgress = true;
-    runWithJitter("replyAgent", runtimeConfig.scheduler.jitterMinutes, runReplyAgent)
+    runWithJitter("replyAgent", runtimeConfig.scheduler.jitterMinutes, () =>
+      runReplyAgent({ maxReplies: runtimeConfig.scheduler.repliesPerRun })
+    )
       .catch((error) => {
         recordError("scheduler.replyAgent", error);
       })
