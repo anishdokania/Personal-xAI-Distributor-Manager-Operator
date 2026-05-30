@@ -134,7 +134,6 @@ export async function publishReplyToPost(
   const session = await openXBrowser();
 
   try {
-    await ensureLoggedIn(session.page);
     await logBrowserAction("Opening X post for reply", { postUrl });
     await session.page.goto(postUrl, { waitUntil: "domcontentloaded" });
     await randomDelay();
