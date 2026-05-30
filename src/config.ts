@@ -51,6 +51,8 @@ export type OperatorConfig = {
     cdpPort: number;
   };
   scheduler: {
+    postIntervalMinutes: number;
+    postsPerRun: number;
     replyIntervalMinutes: number;
     jitterMinutes: number;
     repliesPerRun: number;
@@ -91,6 +93,8 @@ export const config: OperatorConfig = {
     cdpPort: numberFromEnv("X_CDP_PORT", 9222)
   },
   scheduler: {
+    postIntervalMinutes: numberFromEnv("SCHEDULER_POST_INTERVAL_MINUTES", 0),
+    postsPerRun: numberFromEnv("SCHEDULER_POSTS_PER_RUN", 1),
     replyIntervalMinutes: numberFromEnv("SCHEDULER_REPLY_INTERVAL_MINUTES", 180),
     jitterMinutes: numberFromEnv("SCHEDULER_JITTER_MINUTES", 10),
     repliesPerRun: numberFromEnv("SCHEDULER_REPLIES_PER_RUN", 1)

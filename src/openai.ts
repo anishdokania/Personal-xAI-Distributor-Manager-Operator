@@ -430,6 +430,14 @@ function specificLocalReply(originalPost: string, lower: string, seed: number): 
 
 function mockPost(): string {
   const curatedPosts = [
+    "Lab journal: today’s operator loop is getting more real. One reply every 15 minutes, one post every 30, local logs, and enough friction to keep it accountable.",
+    "Lab journal: I’m tuning this X operator to behave less like a content cannon and more like a steady builder habit with memory, limits, and a visible trail.",
+    "Lab journal: the current experiment is simple: scan the feed, pick one useful conversation, reply naturally, then write a small update about what changed.",
+    "Lab journal: I keep learning that automation gets more useful when the defaults are boring. Small batches, clear logs, visible settings, easy pause.",
+    "Lab journal: distribution is starting to look like a workflow problem. Show up consistently, join relevant conversations, keep the loop inspectable.",
+    "Lab journal: today’s build is about variable replies. The agent should not sound like it has one template wearing different clothes.",
+    "Lab journal: the useful part of this operator is not just posting. It is knowing what it scanned, why it acted, and what it skipped.",
+    "Lab journal: I’m trying to make this feel like a personal distribution assistant, not a spam machine. Fewer actions, better context, cleaner receipts.",
     "I’m building a local AI operator for X: scan the feed, score useful conversations, draft replies, send selectively, and keep a local audit trail. Simple, inspectable, personal.",
     "Looking to connect with builders who care about practical AI agents, browser automation, and tools that create distribution without turning into spam.",
     "The product I keep wanting is a personal operator that helps me show up consistently online while still leaving a clear trail of every action it took.",

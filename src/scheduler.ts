@@ -6,6 +6,7 @@ import { jitterMs, sleep } from "./x/browser";
 
 let postInProgress = false;
 let replyInProgress = false;
+let lastPostRunAt = 0;
 let lastReplyRunAt = 0;
 const postRuns = new Set<string>();
 
@@ -35,14 +36,22 @@ async function schedulerTick(): Promise<void> {
   const now = new Date();
   const dateKey = localDateKey(now);
   const hhmm = localHourMinute(now);
+  const postIntervalMs = runtimeConfig.scheduler.postIntervalMinutes * 60_000;
+  const intervalPostDue =
+    runtimeConfig.scheduler.postIntervalMinutes > 0 && Date.now() - lastPostRunAt >= postIntervalMs;
 
-  if (runtimeConfig.autoPostEnabled && runtimeConfig.postingTimes.includes(hhmm)) {
+  if (runtimeConfig.autoPostEnabled && (runtimeConfig.postingTimes.includes(hhmm) || intervalPostDue)) {
     const runKey = `${dateKey}:${hhmm}`;
 
-    if (!postRuns.has(runKey) && !postInProgress) {
-      postRuns.add(runKey);
+    if ((intervalPostDue || !postRuns.has(runKey)) && !postInProgress) {
+      if (!intervalPostDue) postRuns.add(runKey);
+      lastPostRunAt = Date.now();
       postInProgress = true;
-      runWithJitter("postAgent", runtimeConfig.scheduler.jitterMinutes, runPostAgent)
+      runWithJitter("postAgent", runtimeConfig.scheduler.jitterMinutes, async () => {
+        for (let index = 0; index < runtimeConfig.scheduler.postsPerRun; index += 1) {
+          await runPostAgent();
+        }
+      })
         .catch((error) => {
           recordError("scheduler.postAgent", error);
         })

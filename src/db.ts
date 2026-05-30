@@ -493,6 +493,11 @@ export function getEffectiveConfig(): OperatorConfig {
     mockAiEnabled: booleanSetting("mock_ai", config.mockAiEnabled),
     scheduler: {
       ...config.scheduler,
+      postIntervalMinutes: numberSetting(
+        "scheduler_post_interval_minutes",
+        config.scheduler.postIntervalMinutes
+      ),
+      postsPerRun: numberSetting("scheduler_posts_per_run", config.scheduler.postsPerRun),
       replyIntervalMinutes: numberSetting(
         "scheduler_reply_interval_minutes",
         config.scheduler.replyIntervalMinutes
