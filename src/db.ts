@@ -503,7 +503,11 @@ export function getEffectiveConfig(): OperatorConfig {
         config.scheduler.replyIntervalMinutes
       ),
       jitterMinutes: numberSetting("scheduler_jitter_minutes", config.scheduler.jitterMinutes),
-      repliesPerRun: numberSetting("scheduler_replies_per_run", config.scheduler.repliesPerRun)
+      repliesPerRun: numberSetting("scheduler_replies_per_run", config.scheduler.repliesPerRun),
+      priorityConnectionRepliesPerRun: numberSetting(
+        "scheduler_priority_connection_replies_per_run",
+        config.scheduler.priorityConnectionRepliesPerRun
+      )
     }
   };
 }

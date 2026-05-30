@@ -9,7 +9,7 @@ import {
   repliesToHandleSince,
   replyTextExists
 } from "../db";
-import { generateText } from "../openai";
+import { generateText, isPriorityConnectionPost } from "../openai";
 import { readOperatorMemory } from "../localFiles";
 import { publishReplyToPost } from "../x/post";
 import { scanForYouFeed, type ScannedFeedItem } from "../x/feed";
@@ -26,6 +26,7 @@ export type ReplyAgentResult = {
 
 export type ReplyAgentOptions = {
   maxReplies?: number;
+  priorityConnectionReplies?: number;
 };
 
 function todayStartIso(): string {
@@ -112,10 +113,29 @@ export async function runReplyAgent(options: ReplyAgentOptions = {}): Promise<Re
     let remaining = remainingAtStart;
     const items = await scanForYouFeed(runtimeConfig.maxFeedPostsToScan);
     result.scanned = items.length;
+    const scoredItems = [];
 
     for (const item of items) {
       const score = await scoreFeedItem(item);
       result.scored += 1;
+      scoredItems.push({
+        item,
+        score,
+        isPriorityConnection: isPriorityConnectionPost(item.text)
+      });
+    }
+
+    const priorityConnectionLimit = Math.max(0, options.priorityConnectionReplies ?? 0);
+    const priorityConnections = scoredItems
+      .filter((entry) => entry.isPriorityConnection)
+      .slice(0, priorityConnectionLimit);
+    const priorityIds = new Set(priorityConnections.map((entry) => entry.item.dbId));
+    const orderedItems = [
+      ...priorityConnections,
+      ...scoredItems.filter((entry) => !priorityIds.has(entry.item.dbId))
+    ];
+
+    for (const { item, score } of orderedItems) {
 
       if (score.score < runtimeConfig.minReplyScore) {
         insertReply({
@@ -139,7 +159,7 @@ export async function runReplyAgent(options: ReplyAgentOptions = {}): Promise<Re
           postText: item.text,
           score: score.score,
           status: "skipped",
-          error: "Daily reply limit reached."
+          error: options.maxReplies ? "Scheduled reply limit reached." : "Daily reply limit reached."
         });
         result.skipped += 1;
         continue;

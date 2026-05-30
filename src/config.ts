@@ -56,6 +56,7 @@ export type OperatorConfig = {
     replyIntervalMinutes: number;
     jitterMinutes: number;
     repliesPerRun: number;
+    priorityConnectionRepliesPerRun: number;
   };
 };
 
@@ -97,6 +98,7 @@ export const config: OperatorConfig = {
     postsPerRun: numberFromEnv("SCHEDULER_POSTS_PER_RUN", 1),
     replyIntervalMinutes: numberFromEnv("SCHEDULER_REPLY_INTERVAL_MINUTES", 180),
     jitterMinutes: numberFromEnv("SCHEDULER_JITTER_MINUTES", 10),
-    repliesPerRun: numberFromEnv("SCHEDULER_REPLIES_PER_RUN", 1)
+    repliesPerRun: numberFromEnv("SCHEDULER_REPLIES_PER_RUN", 1),
+    priorityConnectionRepliesPerRun: numberFromEnv("SCHEDULER_PRIORITY_CONNECTION_REPLIES_PER_RUN", 1)
   }
 };

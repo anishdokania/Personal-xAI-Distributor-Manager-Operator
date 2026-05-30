@@ -101,20 +101,24 @@ type LocalReplyFormat =
   | "watch"
   | "counter";
 
-function hasConnectionSignal(text: string): boolean {
-  return /\b(looking to connect|connect with|let['’]?s connect|say hi|say hello|building in|people interested in|builders in)\b/i.test(text);
+export function hasConnectionSignal(text: string): boolean {
+  return /\b(looking to connect|connect with|let['’]?s connect|say hi|say hello|building in|people interested in|builders in|ambitious people|grow together|buildinpublic|building in public)\b/i.test(text);
 }
 
-function hasConnectionRelevance(text: string): boolean {
-  return /\b(ai|agents?|automation|saas|startup|founders?|builders?|developers?|devs?|indie hackers?|product|shipping|coding|full stack|backend|frontend|devops|tools?)\b/i.test(text);
+export function hasConnectionRelevance(text: string): boolean {
+  return /\b(ai|agents?|automation|saas|startup|startups|founders?|builders?|developers?|devs?|indie hackers?|product|shipping|coding|data science|vibe coding|buildinpublic|growing in public|full stack|backend|frontend|devops|tools?)\b/i.test(text);
 }
 
 function isBadConnectionPost(text: string): boolean {
-  return /\b(follow|drop yours?|let['’]?s grow|grow together|dm me|giveaway|airdrop|follower-to-following|gain followers|crypto|token|traders?|trading)\b/i.test(text);
+  return /\b(follow for follow|drop yours?|dm me|giveaway|airdrop|follower-to-following|gain followers|crypto|token|traders?|trading)\b/i.test(text);
+}
+
+export function isPriorityConnectionPost(text: string): boolean {
+  return hasConnectionSignal(text) && hasConnectionRelevance(text) && !isBadConnectionPost(text);
 }
 
 function detectReplyTopic(lower: string): LocalReplyTopic {
-  if (hasConnectionSignal(lower) && hasConnectionRelevance(lower)) return "connection";
+  if (isPriorityConnectionPost(lower)) return "connection";
   if (includesAny(lower, ["subscription", "price", "cost", "$", "plan", "limit"])) return "cost";
   if (includesAny(lower, ["claude", "codex", "chatgpt", "gpt", "cursor", "model"])) return "tool_choice";
   if (lower.includes("vibe coding") || lower.includes("vibecoder")) return "vibe_coding";
@@ -340,16 +344,16 @@ function localReplyFromParts(
 }
 
 function specificLocalReply(originalPost: string, lower: string, seed: number): string | null {
-  if (hasConnectionSignal(lower) && hasConnectionRelevance(lower) && !isBadConnectionPost(lower)) {
+  if (isPriorityConnectionPost(lower)) {
     return pick(
       [
-        "Good crowd to be around. I’m building in the local AI operator / browser automation lane, especially the boring parts: logs, limits, review, and safe autonomy.",
-        "Same orbit here: AI tools, browser automation, and local-first agents. I’m most interested in systems that are useful before they are flashy.",
-        "This is my lane too: AI agents, practical automation, and small tools that remove daily friction without becoming black boxes.",
-        "I’m in the AI automation corner as well. The work I find most interesting is turning messy browser workflows into inspectable loops.",
-        "Definitely relevant to me. I’m working on personal AI operators that help with distribution while keeping logs, limits, and human control visible.",
-        "I’m around this space too: AI agents, browser workflows, and small tools that help builders show up consistently without becoming spammy.",
-        "This is the kind of builder circle I’m trying to spend more time in. I’m focused on local operators, distribution loops, and practical automation."
+        "This is exactly the circle I’m trying to spend more time in. I’m building around AI operators, browser automation, and practical distribution workflows.",
+        "Definitely my lane. I’m working on personal AI operators that help builders show up consistently without turning distribution into spam.",
+        "Same orbit here: startups, coding, AI agents, and building in public. I’m especially interested in tools that make daily workflows more consistent.",
+        "I’m in. I’m building a local X operator right now: scan useful conversations, reply selectively, keep logs, and make distribution feel less random.",
+        "This is the builder corner I’m looking for too. I’m focused on AI automation, distribution loops, and small tools that create real leverage.",
+        "Relevant to me. I’m building in the AI automation lane and trying to connect with people who care about shipping, distribution, and useful tools.",
+        "Count me in. I’m working on local AI operators and the unsexy parts that make them useful: limits, logs, review, and consistent distribution."
       ],
       seed + originalPost.length
     );
@@ -599,18 +603,17 @@ function mockScore(userContent: string) {
     /\?/,
     /\b(which|what|why|how|thoughts|honest|team|vs|or)\b/i,
     /\b(building|shipping|launched|coding|developer|founder|product)\b/i,
-    /\b(looking to connect|connect with|let['’]?s connect|say hi|say hello)\b/i
+    /\b(looking to connect|connect with|let['’]?s connect|say hi|say hello|grow together|buildinpublic|building in public)\b/i
   ].filter((pattern) => pattern.test(scoredPost));
   const spamSignals = [
-    /\b(follow|drop your|let['’]?s grow|grow together|dm me|giveaway|airdrop|follower-to-following|gain followers)\b/i,
+    /\b(follow for follow|drop your|dm me|giveaway|airdrop|follower-to-following|gain followers)\b/i,
     /\$[A-Z]{2,8}\b/,
     /\b(token|crypto|trader|trading)\b/i
   ].filter((pattern) => pattern.test(scoredPost));
   const rawScore = matches.length > 0 ? 6 + matches.length + engagementSignals.length : 4 + engagementSignals.length;
   const spamPenalty = spamSignals.length * 4;
-  const connectionOpportunity =
-    hasConnectionSignal(scoredPost) && hasConnectionRelevance(scoredPost) && !isBadConnectionPost(scoredPost);
-  const boostedScore = connectionOpportunity ? Math.max(rawScore, 8 + Math.min(1, matches.length)) : rawScore;
+  const connectionOpportunity = isPriorityConnectionPost(scoredPost);
+  const boostedScore = connectionOpportunity ? Math.max(rawScore, 9) : rawScore;
   const cappedScore = spamSignals.length > 0 ? Math.min(7, boostedScore - spamPenalty) : boostedScore;
   const score = Math.min(9, Math.max(1, cappedScore));
 
