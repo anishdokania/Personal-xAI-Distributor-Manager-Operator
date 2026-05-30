@@ -388,6 +388,11 @@ function specificLocalReply(originalPost: string, lower: string, seed: number): 
 
 function mockPost(): string {
   const curatedPosts = [
+    "I’m building a local AI operator for X: scan the feed, score useful conversations, draft replies, send selectively, and keep a local audit trail. Simple, inspectable, personal.",
+    "Looking to connect with builders who care about practical AI agents, browser automation, and tools that create distribution without turning into spam.",
+    "The product I keep wanting is a personal operator that helps me show up consistently online while still leaving a clear trail of every action it took.",
+    "I’m spending more time on small AI workflows that create real leverage: fewer repeated tabs, better follow-up, cleaner logs, and more intentional distribution.",
+    "If you’re building in AI agents, local-first tools, browser automation, or creator/distribution workflows, I’d genuinely like to compare notes.",
     "The useful version of a personal AI operator is not flashy. It watches a small workflow, keeps a local trail, and stops cleanly when you ask it to.",
     "I keep coming back to this: automation needs an off switch as much as it needs a clever model.",
     "A good personal agent should feel inspectable. You should know what it saw, what it decided, and what it did before you trust it with more.",

@@ -44,8 +44,18 @@ async function fillComposer(page: Page, text: string, kind: ComposerKind): Promi
   });
   await page.waitForTimeout(500);
 
-  const visibleText = (await editor.textContent().catch(() => ""))?.trim() || "";
-  if (!visibleText.includes(text.slice(0, Math.min(20, text.length)))) {
+  const snippet = text.slice(0, Math.min(20, text.length));
+  let visibleText = (await editor.textContent().catch(() => ""))?.trim() || "";
+  if (!visibleText.includes(snippet)) {
+    await logBrowserAction("Retrying X composer fill with keyboard input");
+    await editor.click({ force: true });
+    await page.keyboard.press(process.platform === "darwin" ? "Meta+A" : "Control+A");
+    await page.keyboard.insertText(text);
+    await page.waitForTimeout(500);
+    visibleText = (await editor.textContent().catch(() => ""))?.trim() || "";
+  }
+
+  if (!visibleText.includes(snippet)) {
     throw new Error("X composer did not accept inserted text. Close any existing composer/draft modal and try again.");
   }
 
