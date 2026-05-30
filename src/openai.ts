@@ -12,9 +12,11 @@ export type ChatMessage = {
 let client: OpenAI | null = null;
 
 const mockPostIndexKey = "__personalXOperatorMockPostIndex";
+const mockReplyIndexKey = "__personalXOperatorMockReplyIndex";
 
 type XOperatorGlobal = typeof globalThis & {
   [mockPostIndexKey]?: number;
+  [mockReplyIndexKey]?: number;
 };
 
 function latestUserContent(messages: ChatMessage[]): string {
@@ -82,6 +84,7 @@ type LocalReplyTopic =
   | "tool_choice"
   | "vibe_coding"
   | "source_control"
+  | "distribution"
   | "building"
   | "cost"
   | "dev_workflow"
@@ -89,6 +92,14 @@ type LocalReplyTopic =
 
 type LocalPostIntent = "question" | "comparison" | "complaint" | "launch" | "advice" | "opinion";
 type LocalReplyStyle = "answer" | "nuance" | "counterpoint" | "principle" | "question";
+type LocalReplyFormat =
+  | "plain"
+  | "short"
+  | "question"
+  | "connection"
+  | "practical"
+  | "watch"
+  | "counter";
 
 function hasConnectionSignal(text: string): boolean {
   return /\b(looking to connect|connect with|let['’]?s connect|say hi|say hello|building in|people interested in|builders in)\b/i.test(text);
@@ -108,6 +119,7 @@ function detectReplyTopic(lower: string): LocalReplyTopic {
   if (includesAny(lower, ["claude", "codex", "chatgpt", "gpt", "cursor", "model"])) return "tool_choice";
   if (lower.includes("vibe coding") || lower.includes("vibecoder")) return "vibe_coding";
   if (includesAny(lower, ["local", "github", "gitlab", "bitbucket", "repo", "repository"])) return "source_control";
+  if (includesAny(lower, ["distribution", "audience", "followers", "growth", "reach", "network"])) return "distribution";
   if (includesAny(lower, ["building", "build", "product", "ship", "startup", "audience"])) return "building";
   if (includesAny(lower, ["engineering", "developer", "code", "coding", "deploy", "stack"])) return "dev_workflow";
   return "ai_general";
@@ -163,6 +175,11 @@ function localReplyFromParts(
       "The storage choice matters less than whether recovery is easy.",
       "Local-first only works if the workflow stays easy to audit."
     ],
+    distribution: [
+      "Distribution gets easier when showing up becomes a system.",
+      "Audience growth feels less random when the feedback loop is visible.",
+      "The underrated part is making connection habits repeatable without making them fake."
+    ],
     building: [
       "Small practical tools are underrated.",
       "I like builds that start painfully specific.",
@@ -205,6 +222,11 @@ function localReplyFromParts(
       "If something breaks, I want logs, history, and a simple path back.",
       "Automation feels safer when state is visible and boring to inspect.",
       "Trust comes from knowing where the work lives and what changed."
+    ],
+    distribution: [
+      "The useful move is consistent, specific participation in the right conversations.",
+      "The goal is not more noise, it is more relevant surface area with people who already care.",
+      "A small number of thoughtful replies can beat a lot of generic posting if the targeting is right."
     ],
     building: [
       "You learn faster when the surface area is small enough to test honestly.",
@@ -294,8 +316,25 @@ function localReplyFromParts(
   const ending = intent === "question" && style !== "question" ? "" : pick(endings, seed * 7);
   const anchorLine = anchor.length > 0 && anchor.length <= 56 ? ` On \"${anchor}\": ` : " ";
   const shouldUseAnchor = style !== "question" && anchor.length > 0 && anchor.length <= 56;
-  const base = `${opening}${shouldUseAnchor ? anchorLine : " "}${insight}`;
-  const withEnding = ending ? `${base} ${ending}` : base;
+  const format = pick<LocalReplyFormat>(
+    ["plain", "short", "question", "connection", "practical", "watch", "counter"],
+    seed * 17 + anchor.length
+  );
+  const anchorPrefix = shouldUseAnchor ? `On "${anchor}": ` : "";
+  const formatReplies: Record<LocalReplyFormat, string> = {
+    plain: `${opening}${shouldUseAnchor ? anchorLine : " "}${insight}`,
+    short: `${anchorPrefix}${insight}`,
+    question: `${pick(styleOpeners.question, seed + 19)} ${pick(styleInsights.question, seed + 23)}`,
+    connection:
+      topic === "connection"
+        ? `${pick(openings.connection, seed + 29)} ${pick(insights.connection, seed + 31)}`
+        : `${insight} I am looking at this through the lens of practical AI operators and distribution workflows.`,
+    practical: `${anchorPrefix}${pick(insights[topic], seed + 37)} That is the practical signal I would care about.`,
+    watch: `${pick(["The thing I would watch:", "The real signal:", "What matters after the first impression:"], seed + 41)} ${pick(insights[topic], seed + 43)}`,
+    counter: `${pick(styleOpeners.counterpoint, seed + 47)} ${pick(styleInsights.counterpoint, seed + 53)}`
+  };
+  const base = formatReplies[format];
+  const withEnding = ending && !["short", "watch"].includes(format) ? `${base} ${ending}` : base;
 
   return withEnding.length <= 230 ? withEnding : trimReply(base);
 }
@@ -307,7 +346,10 @@ function specificLocalReply(originalPost: string, lower: string, seed: number): 
         "Good crowd to be around. I’m building in the local AI operator / browser automation lane, especially the boring parts: logs, limits, review, and safe autonomy.",
         "Same orbit here: AI tools, browser automation, and local-first agents. I’m most interested in systems that are useful before they are flashy.",
         "This is my lane too: AI agents, practical automation, and small tools that remove daily friction without becoming black boxes.",
-        "I’m in the AI automation corner as well. The work I find most interesting is turning messy browser workflows into inspectable loops."
+        "I’m in the AI automation corner as well. The work I find most interesting is turning messy browser workflows into inspectable loops.",
+        "Definitely relevant to me. I’m working on personal AI operators that help with distribution while keeping logs, limits, and human control visible.",
+        "I’m around this space too: AI agents, browser workflows, and small tools that help builders show up consistently without becoming spammy.",
+        "This is the kind of builder circle I’m trying to spend more time in. I’m focused on local operators, distribution loops, and practical automation."
       ],
       seed + originalPost.length
     );
@@ -486,7 +528,10 @@ function mockReply(userContent: string): string {
   const postMatch = userContent.match(/Original post:\s*([\s\S]*?)(?:\n\nAuthor:|$)/i);
   const originalPost = postMatch?.[1]?.trim() || "";
   const lower = originalPost.toLowerCase();
-  const seed = hashText(originalPost);
+  const globalState = globalThis as XOperatorGlobal;
+  const replyIndex = (globalState[mockReplyIndexKey] ?? -1) + 1;
+  globalState[mockReplyIndexKey] = replyIndex;
+  const seed = hashText(originalPost) + replyIndex * 97;
   const specificReply = specificLocalReply(originalPost, lower, seed);
   if (specificReply) return specificReply;
 
