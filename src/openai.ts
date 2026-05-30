@@ -347,18 +347,18 @@ function specificLocalReply(originalPost: string, lower: string, seed: number): 
   if (isPriorityConnectionPost(lower)) {
     return pick(
       [
-        "This is exactly the circle I’m trying to spend more time in. I’m building around AI operators, browser automation, and practical distribution workflows.\n\nLet’s #connect.",
-        "Definitely my lane. I’m working on personal AI operators that help builders show up consistently without turning distribution into spam.\n\nWould love to #connect.",
-        "Same orbit here: startups, coding, AI agents, and building in public. I’m especially interested in tools that make daily workflows more consistent.\n\nLet’s #connect.",
-        "I’m in. I’m building a local X operator right now: scan useful conversations, reply selectively, keep logs, and make distribution feel less random.\n\nLet’s #connect.",
-        "This is the builder corner I’m looking for too. I’m focused on AI automation, distribution loops, and small tools that create real leverage.\n\nWould be great to #connect.",
-        "Relevant to me. I’m building in the AI automation lane and trying to meet people who care about shipping, distribution, and useful tools.\n\nLet’s #connect.",
-        "Count me in. I’m working on local AI operators and the unsexy parts that make them useful: limits, logs, review, and consistent distribution.\n\nLet’s #connect.",
-        "I’m building right in this lane: AI automation, X distribution, and small operator loops that help builders meet the right people.\n\nLet’s #connect.",
-        "This is the exact kind of network I’m trying to build: builders who care about AI, shipping, distribution, and practical software.\n\nWould love to #connect.",
-        "I’m experimenting with using a local AI operator to find the right builder conversations and show up consistently.\n\nLet’s #connect.",
-        "I’m in the same world: AI tools, SaaS experiments, dev workflows, and distribution systems that compound over time.\n\nLet’s #connect.",
-        "This is my corner of X too. I’m building tools around AI operators, automation, and intentional distribution for builders.\n\nWould be great to #connect."
+        "This is exactly the circle I’m looking for. I’m building a local X operator that scans my feed, finds builders, replies selectively, and logs every action.\n\nLet’s #connect.",
+        "Definitely my lane. I’m building an AI operator for X distribution: feed scanning, natural replies, lab-journal posts, and a local audit trail.\n\nWould love to #connect.",
+        "Same orbit here: startups, coding, AI agents, and building in public. I’m experimenting with a local operator that helps me meet relevant builders consistently.\n\nLet’s #connect.",
+        "I’m in. My current build is a local X operator that finds useful conversations, replies thoughtfully, posts progress updates, and keeps everything inspectable.\n\nLet’s #connect.",
+        "This is the builder corner I’m trying to grow in. I’m building AI automation for distribution without fake engagement or follow/unfollow games.\n\nWould be great to #connect.",
+        "Relevant to me. I’m building an AI-powered X workflow for finding the right builders, joining conversations, and tracking what actually works.\n\nLet’s #connect.",
+        "Count me in. I’m working on the unsexy but useful parts of personal AI operators: limits, logs, review, scheduling, and consistent distribution.\n\nLet’s #connect.",
+        "I’m building right in this lane: AI automation, X distribution, and small operator loops that help builders meet the right people without spamming.\n\nLet’s #connect.",
+        "This is the exact network I’m trying to build. I’m documenting an experiment where my X account grows through useful replies and transparent automation.\n\nWould love to #connect.",
+        "I’m experimenting with a local AI operator that scans builder posts, replies with context, and posts lab notes as it improves.\n\nLet’s #connect.",
+        "I’m in the same world: AI tools, SaaS experiments, dev workflows, and distribution systems. Currently building one for my own X account.\n\nLet’s #connect.",
+        "This is my corner of X too. I’m building a personal distribution operator around AI agents, browser automation, reply scoring, and local logs.\n\nWould be great to #connect."
       ],
       seed + originalPost.length
     );
