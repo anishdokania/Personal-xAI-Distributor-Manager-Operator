@@ -148,7 +148,15 @@ export async function publishReplyToPost(
     await session.page.goto(postUrl, { waitUntil: "domcontentloaded" });
     await randomDelay();
 
-    await clickFirstVisible(session.page, ['[data-testid="reply"]'], "reply button");
+    await clickFirstVisible(
+      session.page,
+      [
+        '[data-testid="reply"]',
+        'button[aria-label*="Reply"]',
+        'div[role="button"][aria-label*="Reply"]'
+      ],
+      "reply button"
+    );
     await fillComposer(session.page, replyText, "reply");
     await submitComposer(session.page, replyText, "reply");
 

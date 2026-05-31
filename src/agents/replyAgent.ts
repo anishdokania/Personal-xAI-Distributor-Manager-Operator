@@ -193,7 +193,11 @@ export async function runReplyAgent(options: ReplyAgentOptions = {}): Promise<Re
         continue;
       }
 
-      const replyText = await generateReply(item, score.reason);
+      let replyText = "";
+      for (let attempt = 1; attempt <= 3; attempt += 1) {
+        replyText = await generateReply(item, score.reason);
+        if (!replyTextExists(replyText)) break;
+      }
 
       if (replyTextExists(replyText)) {
         insertReply({

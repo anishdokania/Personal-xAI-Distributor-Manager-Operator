@@ -173,7 +173,8 @@ export async function isLoggedIn(page: Page): Promise<boolean> {
   const loggedInSignals = [
     '[data-testid="SideNav_NewTweet_Button"]',
     '[data-testid="AppTabBar_Home_Link"]',
-    'a[href="/home"]'
+    'a[href="/home"]',
+    'article[data-testid="tweet"]'
   ];
 
   for (const selector of loggedInSignals) {
@@ -188,7 +189,30 @@ export async function isLoggedIn(page: Page): Promise<boolean> {
 export async function ensureLoggedIn(page: Page): Promise<void> {
   await logBrowserAction("Opening X home");
   await page.goto("https://x.com/home", { waitUntil: "domcontentloaded" });
-  await randomDelay();
+  await page
+    .waitForSelector(
+      [
+        '[data-testid="SideNav_NewTweet_Button"]',
+        '[data-testid="AppTabBar_Home_Link"]',
+        'a[href="/home"]',
+        'article[data-testid="tweet"]',
+        'input[name="text"]'
+      ].join(", "),
+      { timeout: 15_000 }
+    )
+    .catch(() => undefined);
+  await randomDelay(1_200, 2_800);
+
+  if (!(await isLoggedIn(page))) {
+    await logBrowserAction("Retrying X login session check");
+    await page.reload({ waitUntil: "domcontentloaded" }).catch(() => undefined);
+    await page
+      .waitForSelector(
+        '[data-testid="SideNav_NewTweet_Button"], [data-testid="AppTabBar_Home_Link"], a[href="/home"], article[data-testid="tweet"]',
+        { timeout: 12_000 }
+      )
+      .catch(() => undefined);
+  }
 
   if (!(await isLoggedIn(page))) {
     throw new Error(
